@@ -15,21 +15,105 @@ const DocumentScreen = ({ route, navigation }) => {
 
   const shareDocument = async () => {
     try {
-      const shareOptions = {
-        title: 'Share Scanned Document',
-        message: `Sharing scanned document: ${document.name}`,
-        url: `file://${document.path}`,
-        type: 'image/jpeg',
-        filename: document.name,
-        saveToFiles: true,
-      };
+      // Debug logging
+      console.log('Document object:', JSON.stringify(document, null, 2));
+      console.log('Document path:', document?.path);
+      console.log('Document name:', document?.name);
+      
+      // Check for valid document and path
+      if (!document) {
+        Alert.alert('Error', 'No document provided');
+        return;
+      }
 
-      await Share.open(shareOptions);
+      const documentPath = document.path;
+      const documentName = document.name || 'scanned_document.jpg';
+      
+      if (!documentPath) {
+        Alert.alert('Error', 'Document path is missing');
+        return;
+      }
+
+      // Verify file exists before sharing
+      const fileExists = await require('react-native-fs').exists(documentPath);
+      if (!fileExists) {
+        Alert.alert('Error', 'Document file not found');
+        return;
+      }
+
+      // Copy file to a shareable location first
+      const RNFS = require('react-native-fs');
+      const timestamp = Date.now();
+      const sharedFileName = `scanned_doc_${timestamp}.jpg`;
+      const sharedPath = `${RNFS.CachesDirectoryPath}/${sharedFileName}`;
+      
+      console.log('Copying file for sharing:', documentPath, '->', sharedPath);
+      
+      try {
+        // Copy to cache directory for sharing
+        await RNFS.copyFile(documentPath, sharedPath);
+        console.log('File copied successfully');
+        
+        // Verify the copied file exists
+        const fileExists = await RNFS.exists(sharedPath);
+        console.log('Copied file exists:', fileExists);
+        
+        if (!fileExists) {
+          throw new Error('Failed to copy file for sharing');
+        }
+        
+        // Share the copied file
+        const shareOptions = {
+          title: 'Scanned Document',
+          message: 'Scanned document from CamScanner',
+          url: `file://${sharedPath}`,
+          type: 'image/jpeg',
+        };
+
+        console.log('Sharing file:', shareOptions);
+        await Share.open(shareOptions);
+        
+        // Clean up the temporary file after a delay
+        setTimeout(async () => {
+          try {
+            await RNFS.unlink(sharedPath);
+            console.log('Temporary share file cleaned up');
+          } catch (cleanupError) {
+            console.log('Failed to cleanup temp file:', cleanupError);
+          }
+        }, 10000); // 10 seconds delay
+        
+      } catch (copyError) {
+        // Check if user just cancelled sharing
+        if (copyError.message === 'User did not share') {
+          console.log('User cancelled sharing');
+          return;
+        }
+        
+        console.error('Failed to copy file for sharing:', copyError);
+        
+        // Fallback: try sharing original file directly
+        console.log('Trying fallback sharing method');
+        const shareOptions = {
+          title: 'Scanned Document', 
+          url: `file://${documentPath}`,
+          type: 'image/jpeg',
+        };
+        
+        await Share.open(shareOptions);
+      }
     } catch (error) {
       console.error('Share error:', error);
-      if (error.message !== 'User did not share') {
-        Alert.alert('Error', 'Failed to share document');
+      
+      // Handle user cancellation gracefully
+      if (error.message === 'User did not share' || error.message.includes('User did not share')) {
+        console.log('User cancelled sharing');
+        return;
       }
+      
+      // Only show error for actual technical failures
+      console.error('Error details:', error.message, error.code);
+      Alert.alert('Error', 'Failed to share document. Please try again.');
     }
   };
 

@@ -16,14 +16,19 @@ const HomeScreen = ({ navigation }) => {
   const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
 
   useEffect(() => {
-    createDocumentsDirectory();
-    loadDocuments();
+    initializeApp();
   }, []);
+
+  const initializeApp = async () => {
+    await createDocumentsDirectory();
+    await loadDocuments();
+  };
 
   const createDocumentsDirectory = async () => {
     try {
       const exists = await RNFS.exists(documentsDir);
       if (!exists) {
+        console.log('Creating documents directory:', documentsDir);
         await RNFS.mkdir(documentsDir);
       }
     } catch (error) {
@@ -34,13 +39,28 @@ const HomeScreen = ({ navigation }) => {
   const loadDocuments = async () => {
     try {
       setRefreshing(true);
+      // Ensure directory exists before reading
+      const dirExists = await RNFS.exists(documentsDir);
+      if (!dirExists) {
+        console.log('Documents directory does not exist, no documents to load');
+        setDocuments([]);
+        return;
+      }
+      
       const files = await RNFS.readDir(documentsDir);
       const documentFiles = files
         .filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png'))
         .sort((a, b) => b.mtime - a.mtime);
       setDocuments(documentFiles);
+      console.log(`Loaded ${documentFiles.length} documents`);
+      
+      // Debug: Log first document to see structure
+      if (documentFiles.length > 0) {
+        console.log('First document structure:', JSON.stringify(documentFiles[0], null, 2));
+      }
     } catch (error) {
       console.error('Error loading documents:', error);
+      setDocuments([]);
     } finally {
       setRefreshing(false);
     }

@@ -48,6 +48,13 @@ const ScanScreen = ({ navigation }) => {
     try {
       setProcessing(true);
 
+      // Ensure documents directory exists
+      const dirExists = await RNFS.exists(documentsDir);
+      if (!dirExists) {
+        console.log('Creating documents directory for saving');
+        await RNFS.mkdir(documentsDir);
+      }
+
       const timestamp = new Date().getTime();
       
       // For now, save the first page as the main document

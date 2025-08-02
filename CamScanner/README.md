@@ -1,97 +1,153 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# CamScanner
 
-# Getting Started
+A React Native document scanner app for Android that captures documents, applies edge detection and perspective correction, and saves them as PDFs.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Features
 
-## Step 1: Start Metro
+- Camera-based document scanning
+- Automatic edge detection
+- Perspective correction
+- Image enhancement for professional-looking scans
+- PDF generation and saving
+- Document sharing functionality
+- Ad-free experience
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Setup
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+1. Install dependencies:
+```bash
+npm install
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+2. For iOS (if needed):
+```bash
+cd ios && pod install
 ```
 
-### iOS
+3. Run the app:
+```bash
+# Android
+npx react-native run-android
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+# iOS
+npx react-native run-ios
 ```
 
-Then, and every time you update your native dependencies, run:
+## Testing & Debugging
 
-```sh
-bundle exec pod install
+### Quick Start
+```bash
+# Run the automated test script
+./scripts/test-app.sh
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Manual Testing
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+1. **Start Metro Bundler**:
+```bash
+npx react-native start
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+2. **Run on Emulator**:
+```bash
+# Start emulator
+./scripts/start-emulator.sh
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+# Install and run app
+npx react-native run-android --deviceId emulator-5554
+```
 
-## Step 3: Modify your app
+3. **Run on Physical Device**:
+```bash
+# List connected devices
+adb devices
 
-Now that you have successfully run the app, let's make changes!
+# Run on specific device
+npx react-native run-android --deviceId YOUR_DEVICE_ID
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Debugging Tools
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+1. **View Console Logs**:
+```bash
+# Interactive log viewer
+./scripts/view-logs.sh
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+# Or manually
+npx react-native log-android
+```
 
-## Congratulations! :tada:
+2. **Debug Menu**:
+- Shake device or press Cmd+M (emulator)
+- Enable "Debug JS Remotely" for Chrome DevTools
+- Enable "Fast Refresh" for live reload
 
-You've successfully run and modified your React Native App. :partying_face:
+3. **Flipper** (Advanced):
+```bash
+# Install if needed
+brew install --cask flipper
 
-### Now what?
+# Trust the app on macOS
+xattr -d com.apple.quarantine /Applications/Flipper.app
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+# Or right-click Flipper.app > Open
+```
 
-# Troubleshooting
+### Common Issues
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+**App not showing on emulator**:
+- Make sure Metro bundler is running
+- Check if app is installed: `adb shell pm list packages | grep camscanner`
+- Reinstall: `npx react-native run-android --deviceId emulator-5554`
 
-# Learn More
+**Share button error**:
+- Check logs with `./scripts/view-logs.sh`
+- Debug info is logged when sharing is attempted
 
-To learn more about React Native, take a look at the following resources:
+## Project Structure
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+```
+CamScanner/
+├── src/
+│   ├── screens/
+│   │   ├── HomeScreen.js      # Document list
+│   │   ├── ScanScreen.js      # Camera scanning
+│   │   └── DocumentScreen.js  # Document viewer
+│   └── navigation/
+│       └── AppNavigator.js    # Navigation setup
+├── scripts/                   # Helper scripts
+│   ├── start-emulator.sh     # Launch Android emulator
+│   ├── test-app.sh           # Automated testing
+│   ├── view-logs.sh          # Log viewer
+│   └── debug-setup.sh        # Debug info
+└── android/                   # Android project files
+```
+
+## Development Stack
+
+- **Framework**: React Native 0.80.2 (Legacy Architecture)
+- **Document Scanning**: react-native-document-scanner-plugin
+- **PDF Generation**: react-native-pdf
+- **File System**: react-native-fs
+- **Sharing**: react-native-share
+
+## Architecture Decisions
+
+This project uses React Native's **Legacy Architecture** (not the New Architecture). This decision was made based on:
+
+- **Stability**: Legacy Architecture is battle-tested and stable for production
+- **Library Compatibility**: 100% compatibility with all our dependencies
+- **Development Speed**: No time spent fighting framework issues
+- **Future Migration**: Can upgrade to New Architecture when ecosystem matures (mid-2025)
+
+See [NEW_ARCHITECTURE_MIGRATION.md](NEW_ARCHITECTURE_MIGRATION.md) for detailed migration planning.
+
+## Troubleshooting
+
+If you're having issues, see the [React Native Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+
+## Learn More
+
+- [React Native Website](https://reactnative.dev)
+- [React Native Docs](https://reactnative.dev/docs/getting-started)
+- [React Native GitHub](https://github.com/facebook/react-native)
