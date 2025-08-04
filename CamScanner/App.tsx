@@ -8,11 +8,17 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import DocumentScreen from './src/screens/DocumentScreen';
 
-function App() {
-  const [currentScreen, setCurrentScreen] = useState('Home');
-  const [selectedDocument, setSelectedDocument] = useState(null);
+type ScreenName = 'Home' | 'Scan' | 'Document';
 
-  const navigate = (screen, params = {}) => {
+interface NavigationParams {
+  document?: any;
+}
+
+function App() {
+  const [currentScreen, setCurrentScreen] = useState<ScreenName>('Home');
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+
+  const navigate = (screen: ScreenName, params: NavigationParams = {}) => {
     setCurrentScreen(screen);
     if (params.document) {
       setSelectedDocument(params.document);

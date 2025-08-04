@@ -7,13 +7,18 @@ import {
   Alert,
   Image,
   ScrollView,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
+import PropTypes from 'prop-types';
 import Share from 'react-native-share';
 
 const DocumentScreen = ({ route, navigation }) => {
   const { document } = route.params;
+  const [shareModalVisible, setShareModalVisible] = useState(false);
 
-  const shareDocument = async () => {
+  const shareAsJPG = async () => {
+    setShareModalVisible(false);
     try {
       // Debug logging
       console.log('Document object:', JSON.stringify(document, null, 2));
@@ -27,7 +32,6 @@ const DocumentScreen = ({ route, navigation }) => {
       }
 
       const documentPath = document.path;
-      const documentName = document.name || 'scanned_document.jpg';
       
       if (!documentPath) {
         Alert.alert('Error', 'Document path is missing');
@@ -55,10 +59,10 @@ const DocumentScreen = ({ route, navigation }) => {
         console.log('File copied successfully');
         
         // Verify the copied file exists
-        const fileExists = await RNFS.exists(sharedPath);
-        console.log('Copied file exists:', fileExists);
+        const copiedFileExists = await RNFS.exists(sharedPath);
+        console.log('Copied file exists:', copiedFileExists);
         
-        if (!fileExists) {
+        if (!copiedFileExists) {
           throw new Error('Failed to copy file for sharing');
         }
         
@@ -74,13 +78,16 @@ const DocumentScreen = ({ route, navigation }) => {
         await Share.open(shareOptions);
         
         // Clean up the temporary file after a delay
-        setTimeout(async () => {
-          try {
-            await RNFS.unlink(sharedPath);
-            console.log('Temporary share file cleaned up');
-          } catch (cleanupError) {
-            console.log('Failed to cleanup temp file:', cleanupError);
-          }
+        setTimeout(() => {
+          // Wrap in anonymous function to handle async properly
+          (async () => {
+            try {
+              await RNFS.unlink(sharedPath);
+              console.log('Temporary share file cleaned up');
+            } catch (cleanupError) {
+              console.log('Failed to cleanup temp file:', cleanupError);
+            }
+          })();
         }, 10000); // 10 seconds delay
         
       } catch (copyError) {
@@ -117,6 +124,15 @@ const DocumentScreen = ({ route, navigation }) => {
     }
   };
 
+  const shareAsPDF = async () => {
+    setShareModalVisible(false);
+    Alert.alert(
+      'PDF Feature Coming Soon',
+      'PDF conversion will be added in a future update. For now, you can share as JPG.',
+      [{ text: 'OK' }]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -128,7 +144,7 @@ const DocumentScreen = ({ route, navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.shareButton}
-          onPress={shareDocument}
+          onPress={() => setShareModalVisible(true)}
         >
           <Text style={styles.shareButtonText}>Share</Text>
         </TouchableOpacity>
@@ -147,6 +163,41 @@ const DocumentScreen = ({ route, navigation }) => {
           resizeMode="contain"
         />
       </ScrollView>
+      
+      {/* Share Format Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={shareModalVisible}
+        onRequestClose={() => setShareModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Choose Format</Text>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={shareAsJPG}
+            >
+              <Text style={styles.modalButtonText}>Share as Image (JPG)</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={shareAsPDF}
+            >
+              <Text style={styles.modalButtonText}>Share as PDF</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShareModalVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -202,6 +253,68 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 24,
+    width: '80%',
+    maxWidth: 300,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  modalButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#757575',
+    marginBottom: 0,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
 });
+
+DocumentScreen.propTypes = {
+  route: PropTypes.shape({
+    params: PropTypes.shape({
+      document: PropTypes.shape({
+        path: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+      }).isRequired,
+    }).isRequired,
+  }).isRequired,
+  navigation: PropTypes.shape({
+    goBack: PropTypes.func.isRequired,
+  }).isRequired,
+};
 
 export default DocumentScreen;

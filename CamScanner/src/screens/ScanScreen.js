@@ -1,13 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import PropTypes from 'prop-types';
 import DocumentScanner from 'react-native-document-scanner-plugin';
 import RNFS from 'react-native-fs';
 
@@ -15,7 +14,6 @@ const ScanScreen = ({ navigation }) => {
   const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [scannedPages, setScannedPages] = useState([]);
-  const scannerRef = useRef(null);
 
   const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
 
@@ -95,12 +93,14 @@ const ScanScreen = ({ navigation }) => {
 
   React.useEffect(() => {
     startScan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (scannedPages.length > 0 && !scanning) {
       saveDocument();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scannedPages, scanning]);
 
   if (scanning) {
@@ -162,5 +162,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
 });
+
+ScanScreen.propTypes = {
+  navigation: PropTypes.shape({
+    goBack: PropTypes.func.isRequired,
+    navigate: PropTypes.func.isRequired,
+  }).isRequired,
+};
 
 export default ScanScreen;
