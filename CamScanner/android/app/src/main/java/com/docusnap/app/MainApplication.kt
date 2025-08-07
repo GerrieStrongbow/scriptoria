@@ -1,4 +1,4 @@
-package com.camscanner
+package com.docusnap.app
 
 import android.app.Application
 import com.facebook.react.PackageList

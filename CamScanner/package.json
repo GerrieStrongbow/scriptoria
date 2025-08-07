@@ -1,6 +1,6 @@
 {
-  "name": "CamScanner",
-  "version": "0.0.1",
+  "name": "DocuSnap",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
