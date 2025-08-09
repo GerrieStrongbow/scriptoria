@@ -1,4 +1,4 @@
-# DocuSnap Testing Guide - Pre-Release Testing Options
+# Scriptoria Testing Guide - Pre-Release Testing Options
 
 ## Overview
 
@@ -111,21 +111,21 @@ You can promote builds between tracks or skip tracks if needed.
 
 ```bash
 # 1. Build your release
-cd CamScanner
+cd Scriptoria
 ./scripts/build-release.sh
 
 # 2. The AAB will be at:
-# releases/v1.0/DocuSnap.aab
+# releases/v1.0/Scriptoria.aab
 ```
 
 ### 2. In Play Console
 
 1. Navigate to: **Release > Testing > Internal testing**
 2. Click **"Create new release"**
-3. Upload `DocuSnap.aab`
+3. Upload `Scriptoria.aab`
 4. Add release notes:
    ```
-   Initial test release of DocuSnap
+   Initial test release of Scriptoria
    - Document scanning with edge detection
    - Save as PDF or image
    - Share functionality
@@ -139,11 +139,11 @@ cd CamScanner
 Send this to your testers:
 
 ```
-Subject: Test DocuSnap - Document Scanner App
+Subject: Test Scriptoria - Document Scanner App
 
 Hi [Name],
 
-You're invited to test DocuSnap before public release!
+You're invited to test Scriptoria before public release!
 
 To join:
 1. Click this link: [TESTING_LINK]
@@ -200,7 +200,7 @@ Thanks for helping!
 
 ## Common Testing Scenarios
 
-### Test Cases for DocuSnap
+### Test Cases for Scriptoria
 
 1. **Basic Flow**
    - Open app → Scan document → Save → View → Share

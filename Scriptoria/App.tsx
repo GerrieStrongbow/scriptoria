@@ -1,12 +1,12 @@
 /**
- * CamScanner - Document Scanner App
+ * Scriptoria - Document Scanner App
  * @format
  */
 
 import React, { useState } from 'react';
+import DocumentScreen from './src/screens/DocumentScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
-import DocumentScreen from './src/screens/DocumentScreen';
 
 type ScreenName = 'Home' | 'Scan' | 'Document';
 
@@ -35,9 +35,9 @@ function App() {
       case 'Scan':
         return <ScanScreen navigation={{ navigate, goBack }} />;
       case 'Document':
-        return <DocumentScreen 
-          route={{ params: { document: selectedDocument } }} 
-          navigation={{ navigate, goBack }} 
+        return <DocumentScreen
+          route={{ params: { document: selectedDocument } }}
+          navigation={{ navigate, goBack }}
         />;
       default:
         return <HomeScreen navigation={{ navigate, goBack }} />;

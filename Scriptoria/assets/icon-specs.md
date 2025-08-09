@@ -1,4 +1,4 @@
-# DocuSnap Icon Design Specifications
+# Scriptoria Icon Design Specifications
 
 ## App Icon Concept
 - **Primary Element**: A document/paper with a camera lens overlay

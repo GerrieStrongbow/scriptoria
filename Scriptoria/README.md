@@ -1,4 +1,4 @@
-# CamScanner
+# Scriptoria
 
 A React Native document scanner app for Android that captures documents, applies edge detection and perspective correction, and saves them as PDFs.
 
@@ -15,16 +15,19 @@ A React Native document scanner app for Android that captures documents, applies
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. For iOS (if needed):
+
 ```bash
 cd ios && pod install
 ```
 
 3. Run the app:
+
 ```bash
 # Android
 npx react-native run-android
@@ -36,6 +39,7 @@ npx react-native run-ios
 ## Testing & Debugging
 
 ### Quick Start
+
 ```bash
 # Run the automated test script
 ./scripts/test-app.sh
@@ -44,11 +48,13 @@ npx react-native run-ios
 ### Manual Testing
 
 1. **Start Metro Bundler**:
+
 ```bash
 npx react-native start
 ```
 
 2. **Run on Emulator**:
+
 ```bash
 # Start emulator
 ./scripts/start-emulator.sh
@@ -58,6 +64,7 @@ npx react-native run-android --deviceId emulator-5554
 ```
 
 3. **Run on Physical Device**:
+
 ```bash
 # List connected devices
 adb devices
@@ -69,6 +76,7 @@ npx react-native run-android --deviceId YOUR_DEVICE_ID
 ### Debugging Tools
 
 1. **View Console Logs**:
+
 ```bash
 # Interactive log viewer
 ./scripts/view-logs.sh
@@ -78,11 +86,13 @@ npx react-native log-android
 ```
 
 2. **Debug Menu**:
+
 - Shake device or press Cmd+M (emulator)
 - Enable "Debug JS Remotely" for Chrome DevTools
 - Enable "Fast Refresh" for live reload
 
 3. **Flipper** (Advanced):
+
 ```bash
 # Install if needed
 brew install --cask flipper
@@ -96,18 +106,20 @@ xattr -d com.apple.quarantine /Applications/Flipper.app
 ### Common Issues
 
 **App not showing on emulator**:
+
 - Make sure Metro bundler is running
-- Check if app is installed: `adb shell pm list packages | grep camscanner`
+- Check if app is installed: `adb shell pm list packages | grep scriptoria`
 - Reinstall: `npx react-native run-android --deviceId emulator-5554`
 
 **Share button error**:
+
 - Check logs with `./scripts/view-logs.sh`
 - Debug info is logged when sharing is attempted
 
 ## Project Structure
 
 ```
-CamScanner/
+Scriptoria/
 ├── src/
 │   ├── screens/
 │   │   ├── HomeScreen.js      # Document list

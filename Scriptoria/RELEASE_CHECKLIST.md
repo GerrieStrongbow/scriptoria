@@ -1,10 +1,10 @@
-# DocuSnap Release Checklist
+# Scriptoria Release Checklist
 
 ## Pre-Release Setup ✅
 
 ### 1. App Configuration
-- [x] App name changed to "DocuSnap"
-- [x] Package ID changed to "com.docusnap.app"
+- [x] App name: "Scriptoria"
+- [x] Package ID: "com.scriptoria"
 - [x] Version set to 1.0.0
 - [x] Build.gradle configured for release signing
 
@@ -54,9 +54,9 @@
 
 ### Full Description
 ```
-DocuSnap - Simple Document Scanner
+Scriptoria - Simple Document Scanner
 
-Transform your phone into a powerful document scanner. DocuSnap makes it easy to scan, save, and share documents as high-quality PDFs or images.
+Transform your phone into a powerful document scanner. Scriptoria makes it easy to scan, save, and share documents as high-quality PDFs or images.
 
 KEY FEATURES:
 ✓ Automatic edge detection
@@ -86,7 +86,7 @@ PRIVACY FIRST:
 • No cloud uploads
 • Camera permission used only for scanning
 
-DocuSnap is the document scanner that respects your privacy and time. No ads, no nonsense - just simple, effective document scanning.
+Scriptoria is the document scanner that respects your privacy and time. No ads, no nonsense - just simple, effective document scanning.
 ```
 
 ## Privacy Policy Template
