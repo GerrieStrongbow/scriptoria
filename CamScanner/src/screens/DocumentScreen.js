@@ -1,23 +1,57 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Image,
-  ScrollView,
-  Modal,
-  ActivityIndicator,
-} from 'react-native';
 import PropTypes from 'prop-types';
-import Share from 'react-native-share';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { createPdf } from 'react-native-images-to-pdf';
+import Share from 'react-native-share';
+import Feather from 'react-native-vector-icons/Feather';
+import {
+  IlluminatedButton,
+  ManuscriptContainer,
+  ManuscriptHeading,
+  ParchmentButton,
+  ScholarlyText,
+  Scriptorium,
+  scriptoriaTheme
+} from '../components/ScriptoriaComponents';
 
 const DocumentScreen = ({ route, navigation }) => {
   const { document } = route.params;
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState(1);
+
+  useEffect(() => {
+    // Handle Android hardware back to go back instead of exiting
+    const onBack = () => {
+      navigation.goBack();
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [navigation]);
+
+  useEffect(() => {
+    // Compute image aspect ratio to render full-width with correct height
+    const uri = `file://${document.path}`;
+    // Image.getSize isn't imported separately; use RN Image API via current import
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w && h) setAspectRatio(w / h);
+      },
+      () => { }
+    );
+  }, [document.path]);
 
   const shareAsJPG = async () => {
     setShareModalVisible(false);
@@ -93,16 +127,12 @@ const DocumentScreen = ({ route, navigation }) => {
         }, 10000); // 10 seconds delay
 
       } catch (copyError) {
-        // Check if user just cancelled sharing
-        if (copyError.message === 'User did not share') {
-          console.log('User cancelled sharing');
+        // Handle user cancellation without logging errors
+        if (copyError?.message?.includes('User did not share')) {
           return;
         }
 
-        console.error('Failed to copy file for sharing:', copyError);
-
         // Fallback: try sharing original file directly
-        console.log('Trying fallback sharing method');
         const shareOptions = {
           title: 'Scanned Document',
           url: `file://${documentPath}`,
@@ -112,23 +142,15 @@ const DocumentScreen = ({ route, navigation }) => {
         await Share.open(shareOptions);
       }
     } catch (error) {
-      console.error('Share error:', error);
-
-      // Handle user cancellation gracefully
-      if (error.message === 'User did not share' || error.message.includes('User did not share')) {
-        console.log('User cancelled sharing');
+      if (error?.message?.includes('User did not share')) {
         return;
       }
-
-      // Only show error for actual technical failures
-      console.error('Error details:', error.message, error.code);
       Alert.alert('Error', 'Failed to share document. Please try again.');
     }
   };
 
   const shareAsPDF = async () => {
     setShareModalVisible(false);
-    setIsLoading(true);
 
     try {
       const RNFS = require('react-native-fs');
@@ -152,11 +174,10 @@ const DocumentScreen = ({ route, navigation }) => {
       const outputPath = `${RNFS.CachesDirectoryPath}/${pdfFileName}`;
 
       console.log('Creating PDF with filename:', pdfFileName);
-      console.log('Creating PDF at:', outputPath);
 
       // Configure PDF creation options
       const options = {
-        pages: [{ 
+        pages: [{
           imagePath: document.path,
           // Optional: you can specify width/height if needed
           // width: 595, // A4 width in points
@@ -165,24 +186,18 @@ const DocumentScreen = ({ route, navigation }) => {
         outputPath: outputPath,
       };
 
-      console.log('PDF creation options:', JSON.stringify(options, null, 2));
-
       // Create the PDF
       const pdfPath = await createPdf(options);
-      console.log('PDF created successfully at:', pdfPath);
 
       // Verify PDF file exists
       const pdfExists = await RNFS.exists(pdfPath);
-      console.log('PDF file exists:', pdfExists);
-      
+
       if (!pdfExists) {
         throw new Error('PDF file was not created successfully');
       }
 
       // Get PDF file stats for debugging
       const pdfStat = await RNFS.stat(pdfPath);
-      console.log('PDF file size:', pdfStat.size, 'bytes');
-
       // Share the PDF
       const shareOptions = {
         title: 'Scanned Document PDF',
@@ -190,8 +205,6 @@ const DocumentScreen = ({ route, navigation }) => {
         url: `file://${pdfPath}`,
         type: 'application/pdf',
       };
-
-      console.log('Sharing PDF with options:', shareOptions);
       await Share.open(shareOptions);
 
       // Clean up the temporary file after a delay
@@ -208,218 +221,257 @@ const DocumentScreen = ({ route, navigation }) => {
       }, 10000); // 10 seconds delay
 
     } catch (error) {
-      console.error('PDF share error:', error);
-
-      // Handle user cancellation gracefully
-      if (error.message === 'User did not share' || error.message.includes('User did not share')) {
-        console.log('User cancelled sharing');
+      if (error?.message?.includes('User did not share')) {
         return;
       }
-
       Alert.alert('Error', 'Failed to create or share PDF. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={() => setShareModalVisible(true)}
-        >
-          <Text style={styles.shareButtonText}>Share</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        maximumZoomScale={5}
-        minimumZoomScale={0.5}
-        pinchGestureEnabled={true}
-      >
-        <Image
-          source={{ uri: `file://${document.path}` }}
-          style={styles.image}
-          resizeMode="contain"
-        />
-      </ScrollView>
-
-      {/* Share Format Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={shareModalVisible}
-        onRequestClose={() => setShareModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Format</Text>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={shareAsJPG}
-            >
-              <Text style={styles.modalButtonText}>Share as Image (JPG)</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={shareAsPDF}
-            >
-              <Text style={styles.modalButtonText}>Share as PDF</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => setShareModalVisible(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+    <Scriptorium>
+      <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+      <ManuscriptContainer style={styles.docContainer}>
+        {/* Header (no title) */}
+        <View style={styles.header}>
+          <ParchmentButton style={styles.backButton} onPress={() => navigation.goBack()} textStyle={{ fontFamily: scriptoriaTheme.typography.fonts.sans }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="arrow-left" size={18} color={scriptoriaTheme.colors.deepUmber} style={{ marginRight: 6 }} />
+              <ScholarlyText>Library</ScholarlyText>
+            </View>
+          </ParchmentButton>
+          <View style={{ flex: 1 }} />
+          <ParchmentButton style={styles.shareButton} onPress={() => setShareModalVisible(true)} textStyle={{ fontFamily: scriptoriaTheme.typography.fonts.sans }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="share-2" size={18} color={scriptoriaTheme.colors.deepUmber} style={{ marginRight: 6 }} />
+              <ScholarlyText>Share</ScholarlyText>
+            </View>
+          </ParchmentButton>
         </View>
-      </Modal>
 
-      {/* Loading Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isLoading}
-      >
-        <View style={styles.loadingOverlay}>
-          <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#2196F3" />
-            <Text style={styles.loadingText}>Converting to PDF...</Text>
-          </View>
+        {/* Document Viewer (edge-to-edge) */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          maximumZoomScale={5}
+          minimumZoomScale={1}
+          pinchGestureEnabled={true}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
+          <Image
+            source={{ uri: `file://${document.path}` }}
+            style={[styles.image, { aspectRatio }]}
+            resizeMode="contain"
+          />
+        </ScrollView>
+
+        {/* Footer with document name (no extension) */}
+        <View style={styles.docFooter}>
+          <ScholarlyText manuscript style={styles.docName}>
+            {document.name.replace(/\.[^/.]+$/, '')}
+          </ScholarlyText>
         </View>
-      </Modal>
-    </View>
+
+        {/* Share Format Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={shareModalVisible}
+          onRequestClose={() => setShareModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ManuscriptHeading style={styles.modalTitle}>Share</ManuscriptHeading>
+              <ScholarlyText secondary style={styles.modalSubtitle}>
+                Choose a format to share
+              </ScholarlyText>
+
+              <View style={styles.formatOptions}>
+                <IlluminatedButton style={styles.formatButton} onPress={shareAsJPG}>
+                  Share as JPG
+                </IlluminatedButton>
+
+                <IlluminatedButton style={styles.formatButton} onPress={shareAsPDF}>
+                  Share as PDF
+                </IlluminatedButton>
+              </View>
+
+              <ParchmentButton
+                style={styles.cancelModalButton}
+                onPress={() => setShareModalVisible(false)}
+              >
+                Cancel
+              </ParchmentButton>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Loading Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isLoading}
+        >
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color={scriptoriaTheme.colors.primary} />
+              <ScholarlyText style={styles.loadingText}>
+                Illuminating your manuscript...
+              </ScholarlyText>
+            </View>
+          </View>
+        </Modal>
+      </ManuscriptContainer>
+    </Scriptorium>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  // Header styles
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingVertical: scriptoriaTheme.spacing.base,
+    paddingBottom: scriptoriaTheme.spacing.lg,
   },
+
+  docContainer: {
+    paddingBottom: 0,
+  },
+
   backButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#757575',
-    borderRadius: 4,
+    paddingHorizontal: scriptoriaTheme.spacing.sm,
+    paddingVertical: scriptoriaTheme.spacing.xs,
+    minWidth: 80,
   },
-  backButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
+
+  documentTitle: {
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: scriptoriaTheme.spacing.sm,
+    fontSize: scriptoriaTheme.typography.sizes.lg,
+    color: scriptoriaTheme.colors.text.manuscript,
   },
+
   shareButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
+    paddingHorizontal: scriptoriaTheme.spacing.sm,
+    paddingVertical: scriptoriaTheme.spacing.xs,
   },
-  shareButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
+
+  // Document viewer styles
+
   scrollView: {
     flex: 1,
   },
+
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
+
   image: {
     width: '100%',
-    height: '100%',
   },
+
+  docFooter: {
+    paddingVertical: scriptoriaTheme.spacing.base,
+    alignItems: 'center',
+  },
+
+  docName: {
+    fontFamily: scriptoriaTheme.typography.fonts.serif,
+    fontSize: scriptoriaTheme.typography.sizes.sm,
+    color: scriptoriaTheme.colors.text.secondary,
+  },
+
+  // Removed parchment border
+
+  // Modal styles - Parchment Inspired
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(47, 47, 47, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 24,
-    width: '80%',
-    maxWidth: 300,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    backgroundColor: scriptoriaTheme.colors.cardBackground,
+    borderRadius: scriptoriaTheme.borderRadius.xl,
+    padding: scriptoriaTheme.spacing.xl,
+    width: '88%',
+    maxWidth: 360,
+    shadowColor: scriptoriaTheme.colors.shadowWarm,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: scriptoriaTheme.colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: scriptoriaTheme.colors.primary,
   },
+
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
+    marginBottom: scriptoriaTheme.spacing.sm,
+    color: scriptoriaTheme.colors.text.manuscript,
   },
-  modalButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  modalButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
+
+  modalSubtitle: {
     textAlign: 'center',
+    marginBottom: scriptoriaTheme.spacing.xl,
+    fontStyle: 'italic',
   },
-  cancelButton: {
-    backgroundColor: '#757575',
-    marginBottom: 0,
+
+  formatOptions: {
+    marginBottom: scriptoriaTheme.spacing.lg,
   },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
+
+  formatButton: {
+    marginBottom: scriptoriaTheme.spacing.sm,
+    borderRadius: scriptoriaTheme.borderRadius.base,
   },
+
+  cancelModalButton: {
+    borderRadius: scriptoriaTheme.borderRadius.base,
+  },
+
+  // Loading modal styles - Illuminated
   loadingOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(47, 47, 47, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   loadingContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 24,
+    backgroundColor: scriptoriaTheme.colors.cardBackground,
+    borderRadius: scriptoriaTheme.borderRadius.xl,
+    padding: scriptoriaTheme.spacing.xl,
     alignItems: 'center',
+    minWidth: 240,
+    shadowColor: scriptoriaTheme.colors.shadowWarm,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: scriptoriaTheme.colors.border,
+    borderTopWidth: 3,
+    borderTopColor: scriptoriaTheme.colors.primary,
   },
+
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#333',
+    marginTop: scriptoriaTheme.spacing.base,
+    color: scriptoriaTheme.colors.text.secondary,
+    textAlign: 'center',
+    fontFamily: scriptoriaTheme.typography.fonts.serif,
+    fontSize: scriptoriaTheme.typography.sizes.base,
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
   },
 });
 

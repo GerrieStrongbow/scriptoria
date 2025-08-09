@@ -1,14 +1,23 @@
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
+  StatusBar,
+  StyleSheet,
+  View,
 } from 'react-native';
-import PropTypes from 'prop-types';
 import DocumentScanner from 'react-native-document-scanner-plugin';
 import RNFS from 'react-native-fs';
+import Feather from 'react-native-vector-icons/Feather';
+import {
+  AnnotationText,
+  ManuscriptContainer,
+  ManuscriptHeading,
+  ScholarlyText,
+  scriptoriaTheme,
+  Scriptorium,
+} from '../components/ScriptoriaComponents';
 
 const ScanScreen = ({ navigation }) => {
   const [scanning, setScanning] = useState(false);
@@ -53,17 +62,25 @@ const ScanScreen = ({ navigation }) => {
         await RNFS.mkdir(documentsDir);
       }
 
-      const timestamp = new Date().getTime();
-      
+      // Generate readable filename: scan_YYMMDD_HHMM
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const y = String(now.getFullYear()).slice(2);
+      const m = pad(now.getMonth() + 1);
+      const d = pad(now.getDate());
+      const hh = pad(now.getHours());
+      const mm = pad(now.getMinutes());
+      const formatted = `${y}${m}${d}_${hh}${mm}`;
+
       // For now, save the first page as the main document
       // In a future version, we'll combine all pages into a PDF
       const mainImagePath = scannedPages[0];
-      const fileName = `scan_${timestamp}.jpg`;
+      const fileName = `scan_${formatted}.jpg`;
       const destPath = `${documentsDir}/${fileName}`;
-      
+
       // Copy the scanned image to documents directory
       await RNFS.copyFile(mainImagePath, destPath);
-      
+
       // Clean up temp files
       for (const imagePath of scannedPages) {
         try {
@@ -74,11 +91,11 @@ const ScanScreen = ({ navigation }) => {
       }
 
       Alert.alert(
-        'Success',
-        `Document saved successfully (${scannedPages.length} pages)`,
+        'Document saved',
+        `${scannedPages.length} page${scannedPages.length > 1 ? 's' : ''} saved to your library`,
         [
           {
-            text: 'OK',
+            text: 'Return to Library',
             onPress: () => navigation.navigate('Home'),
           },
         ]
@@ -105,61 +122,151 @@ const ScanScreen = ({ navigation }) => {
 
   if (scanning) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.statusText}>Scanning document...</Text>
-      </View>
+      <Scriptorium>
+        <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+        <View style={styles.centerContainer}>
+          <View style={styles.loadingCard}>
+            <Feather name="camera" size={48} color={scriptoriaTheme.colors.primary} style={styles.scanIconFix} />
+            <ActivityIndicator size="large" color={scriptoriaTheme.colors.primary} />
+            <ManuscriptHeading style={styles.statusText}>Scanning document</ManuscriptHeading>
+            <AnnotationText style={styles.subText}>Position your document within the frame</AnnotationText>
+          </View>
+        </View>
+      </Scriptorium>
     );
   }
 
   if (processing) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.statusText}>Processing document...</Text>
-        <Text style={styles.subText}>
-          {scannedPages.length} page(s) scanned
-        </Text>
-      </View>
+      <Scriptorium>
+        <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={scriptoriaTheme.colors.primary} />
+        </View>
+      </Scriptorium>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.infoText}>
-        Follow the on-screen instructions to scan your document
-      </Text>
-    </View>
+    <Scriptorium>
+      <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+      <ManuscriptContainer>
+        <View style={styles.centerContainer}>
+          <View style={styles.instructionCard}>
+            <Feather name="info" size={56} color={scriptoriaTheme.colors.primary} style={styles.scanIconFix} />
+            <ManuscriptHeading style={styles.instructionTitle}>Prepare to scan</ManuscriptHeading>
+            <ScholarlyText secondary style={styles.instructionText}>
+              Ensure the document is well lit and flat before scanning
+            </ScholarlyText>
+          </View>
+        </View>
+      </ManuscriptContainer>
+    </Scriptorium>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    paddingHorizontal: scriptoriaTheme.spacing.xl,
   },
+
+  // Sacred chamber for illumination ceremonies
+  loadingCard: {
+    backgroundColor: scriptoriaTheme.colors.cardBackground,
+    borderRadius: scriptoriaTheme.borderRadius.xl,
+    padding: scriptoriaTheme.spacing['3xl'],
+    alignItems: 'center',
+    minWidth: 300,
+    shadowColor: scriptoriaTheme.colors.shadowWarm,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: scriptoriaTheme.colors.border,
+    borderTopWidth: 4,
+    borderTopColor: scriptoriaTheme.colors.primary,
+    // Manuscript-like texture
+    borderLeftWidth: 3,
+    borderLeftColor: scriptoriaTheme.colors.accent,
+  },
+
+  // Scholarly preparation chamber
+  instructionCard: {
+    backgroundColor: scriptoriaTheme.colors.cardBackground,
+    borderRadius: scriptoriaTheme.borderRadius.xl,
+    padding: scriptoriaTheme.spacing.xl,
+    alignItems: 'center',
+    maxWidth: 340,
+    shadowColor: scriptoriaTheme.colors.shadowWarm,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: scriptoriaTheme.colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: scriptoriaTheme.colors.primary,
+  },
+
+  // Sacred illumination icons
+  scanIcon: {
+    fontSize: 52,
+    marginBottom: scriptoriaTheme.spacing.base,
+    color: scriptoriaTheme.colors.primary,
+    textShadowColor: scriptoriaTheme.colors.shadowWarm,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  processingIcon: {
+    fontSize: 52,
+    marginBottom: scriptoriaTheme.spacing.base,
+    color: scriptoriaTheme.colors.accent,
+    textShadowColor: scriptoriaTheme.colors.shadowWarm,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  instructionIcon: {
+    fontSize: 68,
+    marginBottom: scriptoriaTheme.spacing.base,
+    color: scriptoriaTheme.colors.primary,
+    textShadowColor: scriptoriaTheme.colors.shadowWarm,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  // Scholarly text styles
   statusText: {
-    marginTop: 16,
-    fontSize: 18,
-    color: '#333',
-  },
-  subText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#666',
     textAlign: 'center',
-    marginTop: 32,
+    marginTop: scriptoriaTheme.spacing.base,
+    marginBottom: scriptoriaTheme.spacing.sm,
+    color: scriptoriaTheme.colors.text.manuscript,
+    letterSpacing: 0.5,
+  },
+
+  subText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    letterSpacing: 0.3,
+    lineHeight: scriptoriaTheme.typography.lineHeights.normal * scriptoriaTheme.typography.sizes.sm,
+  },
+
+  instructionTitle: {
+    textAlign: 'center',
+    marginBottom: scriptoriaTheme.spacing.sm,
+    color: scriptoriaTheme.colors.text.manuscript,
+    letterSpacing: 0.8,
+  },
+
+  instructionText: {
+    textAlign: 'center',
+    lineHeight: scriptoriaTheme.typography.lineHeights.relaxed * scriptoriaTheme.typography.sizes.base,
+    letterSpacing: 0.2,
   },
 });
 

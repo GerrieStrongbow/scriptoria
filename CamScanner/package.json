@@ -1,5 +1,5 @@
 {
-  "name": "DocuSnap",
+  "name": "Scriptoria",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -20,7 +20,8 @@
     "react-native-images-to-pdf": "^0.2.1",
     "react-native-pdf": "^6.7.7",
     "react-native-share": "^12.1.2",
-    "react-native-svg": "^15.12.1"
+    "react-native-svg": "^15.12.1",
+    "react-native-vector-icons": "^10.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

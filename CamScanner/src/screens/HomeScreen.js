@@ -1,16 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  Modal,
-  TextInput,
-} from 'react-native';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  Modal,
+  StatusBar,
+  StyleSheet,
+  TextInput,
+  View
+} from 'react-native';
 import RNFS from 'react-native-fs';
+import {
+  AnnotationText,
+  DeleteAction,
+  DocumentRow,
+  EditAction,
+  IlluminatedButton,
+  ManuscriptContainer,
+  ManuscriptHeading,
+  ParchmentButton,
+  QuillButton,
+  ScholarlyInput,
+  ScholarlyText,
+  scriptoriaTheme,
+  ScriptoriaTitle,
+  Scriptorium,
+} from '../components/ScriptoriaComponents';
 
 const HomeScreen = ({ navigation }) => {
   const [documents, setDocuments] = useState([]);
@@ -18,6 +33,7 @@ const HomeScreen = ({ navigation }) => {
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [newName, setNewName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
 
@@ -53,14 +69,14 @@ const HomeScreen = ({ navigation }) => {
         setDocuments([]);
         return;
       }
-      
+
       const files = await RNFS.readDir(documentsDir);
       const documentFiles = files
         .filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png'))
         .sort((a, b) => b.mtime - a.mtime);
       setDocuments(documentFiles);
       console.log(`Loaded ${documentFiles.length} documents`);
-      
+
       // Debug: Log first document to see structure
       if (documentFiles.length > 0) {
         console.log('First document structure:', JSON.stringify(documentFiles[0], null, 2));
@@ -132,7 +148,7 @@ const HomeScreen = ({ navigation }) => {
 
       // Rename the file
       await RNFS.moveFile(selectedDocument.path, newPath);
-      
+
       setRenameModalVisible(false);
       setSelectedDocument(null);
       setNewName('');
@@ -143,264 +159,275 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // Filter documents based on search query
+  const filteredDocuments = documents.filter(document =>
+    document.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const renderDocument = ({ item }) => (
-    <TouchableOpacity
-      style={styles.documentItem}
-      onPress={() => navigation.navigate('Document', { document: item })}
-    >
+    <DocumentRow onPress={() => navigation.navigate('Document', { document: item })}>
       <View style={styles.documentContent}>
+        <View style={styles.documentIcon} />
         <View style={styles.documentInfo}>
-          <Text style={styles.documentName}>{item.name}</Text>
-          <Text style={styles.documentDate}>
-            {new Date(item.mtime).toLocaleDateString()}
-          </Text>
+          <ScholarlyText manuscript style={styles.documentName}>
+            {item.name.replace(/\.[^/.]+$/, '')}
+          </ScholarlyText>
+          <AnnotationText>
+            Saved on {new Date(item.mtime).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </AnnotationText>
         </View>
         <View style={styles.documentActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => openRenameModal(item)}
-          >
-            <Text style={styles.actionButtonText}>✏️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => deleteDocument(item.path)}
-          >
-            <Text style={styles.actionButtonText}>🗑️</Text>
-          </TouchableOpacity>
+          <EditAction
+            onPress={(e) => {
+              e.stopPropagation();
+              openRenameModal(item);
+            }}
+          />
+          <DeleteAction
+            onPress={(e) => {
+              e.stopPropagation();
+              deleteDocument(item.path);
+            }}
+          />
         </View>
       </View>
-    </TouchableOpacity>
+    </DocumentRow>
   );
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No documents scanned yet</Text>
-      <Text style={styles.emptySubtext}>
-        Tap the button below to scan your first document
-      </Text>
+      <ManuscriptHeading style={styles.emptyText}>Your Library</ManuscriptHeading>
+      <ScholarlyText secondary style={styles.emptySubtext}>
+        Begin curating your document collection.{'\n'}
+        Tap the + button to scan your first document.
+      </ScholarlyText>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={documents}
-        renderItem={renderDocument}
-        keyExtractor={item => item.path}
-        refreshing={refreshing}
-        onRefresh={loadDocuments}
-        ListEmptyComponent={renderEmptyList}
-        contentContainerStyle={documents.length === 0 ? styles.emptyList : null}
-      />
-      <TouchableOpacity
-        style={styles.scanButton}
-        onPress={() => navigation.navigate('Scan')}
-      >
-        <Text style={styles.scanButtonText}>+</Text>
-      </TouchableOpacity>
-      
-      {/* Rename Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={renameModalVisible}
-        onRequestClose={() => setRenameModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rename Document</Text>
-            
-            <TextInput
-              style={styles.input}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Enter new name"
-              autoFocus={true}
-              selectTextOnFocus={true}
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setRenameModalVisible(false);
-                  setSelectedDocument(null);
-                  setNewName('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={renameDocument}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
+    <Scriptorium>
+      <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+      <ManuscriptContainer>
+        {/* Header */}
+        <View style={styles.header}>
+          <ScriptoriaTitle>Scriptoria</ScriptoriaTitle>
+          <ScholarlyInput
+            placeholder="Search manuscripts"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchBar}
+          />
+        </View>
+
+        {/* Documents Section */}
+        <View style={styles.documentsSection}>
+          {documents.length > 0 && (
+            <ManuscriptHeading>Recent Manuscripts</ManuscriptHeading>
+          )}
+          <FlatList
+            data={filteredDocuments}
+            renderItem={renderDocument}
+            keyExtractor={item => item.path}
+            refreshing={refreshing}
+            onRefresh={loadDocuments}
+            ListEmptyComponent={renderEmptyList}
+            contentContainerStyle={filteredDocuments.length === 0 ? styles.emptyList : styles.documentsList}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+
+        {/* Floating Action Button */}
+        <QuillButton onPress={() => navigation.navigate('Scan')} />
+
+        {/* Rename Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={renameModalVisible}
+          onRequestClose={() => setRenameModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ManuscriptHeading style={styles.modalTitle}>Rename Manuscript</ManuscriptHeading>
+
+              <TextInput
+                style={styles.input}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Enter manuscript title..."
+                placeholderTextColor={scriptoriaTheme.colors.text.tertiary}
+                autoFocus={true}
+                selectTextOnFocus={true}
+              />
+
+              <View style={styles.modalButtonsColumn}>
+                <IlluminatedButton onPress={renameDocument} style={styles.fullWidthButton} textStyle={{ fontSize: scriptoriaTheme.typography.sizes.sm }}>
+                  Rename
+                </IlluminatedButton>
+                <ParchmentButton
+                  style={[styles.fullWidthButton, { marginTop: scriptoriaTheme.spacing.sm }]}
+                  textStyle={{ fontSize: scriptoriaTheme.typography.sizes.sm }}
+                  onPress={() => {
+                    setRenameModalVisible(false);
+                    setSelectedDocument(null);
+                    setNewName('');
+                  }}
+                >
+                  Cancel
+                </ParchmentButton>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </ManuscriptContainer>
+    </Scriptorium>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  // Header styles
+  header: {
+    paddingTop: scriptoriaTheme.spacing.base,
+    marginBottom: scriptoriaTheme.spacing.lg,
+  },
+
+  searchBar: {
+    marginBottom: scriptoriaTheme.spacing.sm,
+  },
+
+  // Documents section
+  documentsSection: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-  documentItem: {
-    backgroundColor: 'white',
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+
+  documentsList: {
+    paddingBottom: 100, // Space for FAB
   },
+
+  // Document card content
   documentContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
+
+  documentIcon: {
+    marginRight: scriptoriaTheme.spacing.base,
+  },
+
+  documentEmoji: {
+    fontSize: 24,
+    color: scriptoriaTheme.colors.primary,
+  },
+
   documentInfo: {
     flex: 1,
-    marginRight: 8,
+    marginRight: scriptoriaTheme.spacing.sm,
   },
+
+  documentName: {
+    fontFamily: scriptoriaTheme.typography.fonts.serif,
+    fontSize: scriptoriaTheme.typography.sizes.sm,
+    fontWeight: scriptoriaTheme.typography.weights.medium,
+    color: scriptoriaTheme.colors.text.primary,
+    marginBottom: scriptoriaTheme.spacing.xs / 2,
+  },
+
   documentActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  actionButton: {
-    padding: 8,
-    marginLeft: 8,
-    borderRadius: 4,
-    backgroundColor: '#e0e0e0',
-  },
-  deleteButton: {
-    backgroundColor: '#ffebee',
-  },
-  actionButtonText: {
-    fontSize: 16,
-  },
-  documentName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    flex: 1,
-    marginRight: 8,
-  },
-  documentDate: {
-    fontSize: 14,
-    color: '#666',
-  },
+
+  // Empty state
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: scriptoriaTheme.spacing.xl,
+    paddingVertical: scriptoriaTheme.spacing['3xl'],
   },
+
   emptyList: {
     flexGrow: 1,
     justifyContent: 'center',
   },
+
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: scriptoriaTheme.spacing.base,
+  },
+
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
     textAlign: 'center',
+    marginBottom: scriptoriaTheme.spacing.sm,
+    color: scriptoriaTheme.colors.text.primary,
   },
-  scanButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#2196F3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+
+  emptySubtext: {
+    textAlign: 'center',
+    lineHeight: scriptoriaTheme.typography.lineHeights.relaxed * scriptoriaTheme.typography.sizes.base,
   },
-  scanButtonText: {
-    fontSize: 32,
-    color: 'white',
-    fontWeight: '300',
-  },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 24,
-    width: '80%',
-    maxWidth: 300,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    backgroundColor: scriptoriaTheme.colors.cardBackground,
+    borderRadius: scriptoriaTheme.borderRadius.lg,
+    padding: scriptoriaTheme.spacing.xl,
+    width: '85%',
+    maxWidth: 340,
+    shadowColor: scriptoriaTheme.colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: scriptoriaTheme.colors.border,
   },
+
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
+    marginBottom: scriptoriaTheme.spacing.lg,
+    color: scriptoriaTheme.colors.text.primary,
   },
+
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
+    borderColor: scriptoriaTheme.colors.border,
+    borderRadius: scriptoriaTheme.borderRadius.base,
+    padding: scriptoriaTheme.spacing.base,
+    fontSize: scriptoriaTheme.typography.sizes.sm,
+    fontFamily: scriptoriaTheme.typography.fonts.serif,
+    color: scriptoriaTheme.colors.text.primary,
+    marginBottom: scriptoriaTheme.spacing.lg,
+    backgroundColor: scriptoriaTheme.colors.surface,
+    lineHeight: scriptoriaTheme.typography.lineHeights.normal * scriptoriaTheme.typography.sizes.base,
+    letterSpacing: 0.1,
   },
+
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-    alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#757575',
-    marginRight: 8,
+
+  modalButtonsColumn: {
+    marginTop: scriptoriaTheme.spacing.sm,
   },
-  saveButton: {
-    backgroundColor: '#2196F3',
-    marginLeft: 8,
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
+
+  fullWidthButton: {
+    width: '100%',
   },
 });
 
