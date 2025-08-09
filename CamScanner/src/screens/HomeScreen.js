@@ -214,7 +214,7 @@ const HomeScreen = ({ navigation }) => {
       <ManuscriptContainer>
         {/* Header */}
         <View style={styles.header}>
-          <ScriptoriaTitle>Scriptoria</ScriptoriaTitle>
+          <ScriptoriaTitle style={styles.appTitle}>Scriptoria</ScriptoriaTitle>
           <ScholarlyInput
             placeholder="Search manuscripts"
             value={searchQuery}
@@ -226,7 +226,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Documents Section */}
         <View style={styles.documentsSection}>
           {documents.length > 0 && (
-            <ManuscriptHeading>Recent Manuscripts</ManuscriptHeading>
+            <ManuscriptHeading style={styles.sectionHeading}>Recent Manuscripts</ManuscriptHeading>
           )}
           <FlatList
             data={filteredDocuments}
@@ -295,6 +295,11 @@ const styles = StyleSheet.create({
     marginBottom: scriptoriaTheme.spacing.lg,
   },
 
+  appTitle: {
+    fontSize: scriptoriaTheme.typography.sizes['3xl'],
+    letterSpacing: 0.2,
+  },
+
   searchBar: {
     marginBottom: scriptoriaTheme.spacing.sm,
   },
@@ -306,6 +311,11 @@ const styles = StyleSheet.create({
 
   documentsList: {
     paddingBottom: 100, // Space for FAB
+  },
+
+  sectionHeading: {
+    fontSize: scriptoriaTheme.typography.sizes.lg,
+    marginBottom: scriptoriaTheme.spacing.sm,
   },
 
   // Document card content

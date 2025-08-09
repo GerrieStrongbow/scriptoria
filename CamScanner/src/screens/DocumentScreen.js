@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
 
   docName: {
     fontFamily: scriptoriaTheme.typography.fonts.serif,
-    fontSize: scriptoriaTheme.typography.sizes.sm,
+    fontSize: scriptoriaTheme.typography.sizes.base,
     color: scriptoriaTheme.colors.text.secondary,
   },
 

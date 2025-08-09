@@ -62,7 +62,7 @@ const ScanScreen = ({ navigation }) => {
         await RNFS.mkdir(documentsDir);
       }
 
-      // Generate readable filename: scan_YYMMDD_HHMM
+      // Generate readable filename: Scan_YYMMDD_HHMM
       const now = new Date();
       const pad = (n) => String(n).padStart(2, '0');
       const y = String(now.getFullYear()).slice(2);
@@ -75,7 +75,7 @@ const ScanScreen = ({ navigation }) => {
       // For now, save the first page as the main document
       // In a future version, we'll combine all pages into a PDF
       const mainImagePath = scannedPages[0];
-      const fileName = `scan_${formatted}.jpg`;
+      const fileName = `Scan_${formatted}.jpg`;
       const destPath = `${documentsDir}/${fileName}`;
 
       // Copy the scanned image to documents directory
