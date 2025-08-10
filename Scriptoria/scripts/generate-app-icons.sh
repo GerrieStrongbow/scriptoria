@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to generate app icons for DocuSnap
+# Script to generate app icons for Scriptoria
 # Requires ImageMagick to be installed: brew install imagemagick
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -21,7 +21,7 @@ if [ ! -f "$SOURCE_ICON" ]; then
     exit 1
 fi
 
-echo "🎨 Generating app icons for DocuSnap..."
+echo "🎨 Generating app icons for Scriptoria..."
 
 # Android icon sizes
 declare -A ANDROID_SIZES=(

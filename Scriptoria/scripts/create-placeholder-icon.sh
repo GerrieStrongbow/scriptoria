@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to create a simple placeholder icon for DocuSnap
+# Script to create a simple placeholder icon for Scriptoria
 # This creates a basic icon using ImageMagick
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -13,7 +13,7 @@ if ! command -v convert &> /dev/null; then
     exit 1
 fi
 
-echo "🎨 Creating placeholder icon for DocuSnap..."
+echo "🎨 Creating placeholder icon for Scriptoria..."
 
 mkdir -p "$ASSETS_DIR"
 
@@ -34,7 +34,7 @@ convert -size 1024x1024 \
     -font Helvetica-Bold \
     -pointsize 120 \
     -gravity South \
-    -annotate +0+150 "DS" \
+    -annotate +0+150 "S" \
     "$ASSETS_DIR/icon-1024.png"
 
 echo "✅ Placeholder icon created at: assets/icon-1024.png"

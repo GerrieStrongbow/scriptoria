@@ -105,7 +105,7 @@ const DocumentScreen = ({ route, navigation }) => {
         // Share the copied file
         const shareOptions = {
           title: 'Scanned Document',
-          message: 'Scanned document from CamScanner',
+          message: 'Scanned document from Scriptoria',
           url: `file://${sharedPath}`,
           type: 'image/jpeg',
         };
@@ -201,7 +201,7 @@ const DocumentScreen = ({ route, navigation }) => {
       // Share the PDF
       const shareOptions = {
         title: 'Scanned Document PDF',
-        message: 'Scanned document from CamScanner',
+        message: 'Scanned document from Scriptoria',
         url: `file://${pdfPath}`,
         type: 'application/pdf',
       };

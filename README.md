@@ -38,8 +38,8 @@ npx react-native-asset
 
 ## Android/iOS names
 
-- Android rootProject: `Scriptoria` (see `android/settings.gradle`)
-- iOS display name: `Scriptoria` (see `ios/CamScanner/Info.plist`)
+- Android rootProject: `Scriptoria` (see `Scriptoria/android/settings.gradle`)
+- iOS display name: `Scriptoria` (internal iOS project still uses CamScanner directory structure)
 
 ## Linting & formatting
 

@@ -1,4 +1,4 @@
-// Styled Components for DocuSnap - Literary Theme
+// Styled Components for Scriptoria - Literary Theme
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Dimensions } from 'react-native';
 import theme from '../styles/theme';

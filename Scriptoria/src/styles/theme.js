@@ -1,4 +1,4 @@
-// DocuSnap Design System - Warm Literary Theme
+// Scriptoria Design System - Warm Literary Theme
 // Inspired by creative writing, paper, and stationery
 
 const theme = {

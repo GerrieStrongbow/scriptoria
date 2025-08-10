@@ -6,7 +6,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}CamScanner Test & Debug Helper${NC}"
+echo -e "${GREEN}Scriptoria Test & Debug Helper${NC}"
 echo "================================="
 echo ""
 
@@ -51,7 +51,7 @@ echo ""
 echo "Debug Options:"
 echo "1. Shake your device or press Cmd+M for debug menu"
 echo "2. View logs: npx react-native log-android"
-echo "3. View device logs: adb logcat | grep CamScanner"
+echo "3. View device logs: adb logcat | grep Scriptoria"
 echo "4. Open Chrome DevTools: chrome://inspect"
 echo "5. Open Flipper for advanced debugging"
 echo ""

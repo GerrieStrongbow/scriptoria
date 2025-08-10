@@ -125,14 +125,26 @@ Scriptoria/
 │   │   ├── HomeScreen.js      # Document list
 │   │   ├── ScanScreen.js      # Camera scanning
 │   │   └── DocumentScreen.js  # Document viewer
-│   └── navigation/
-│       └── AppNavigator.js    # Navigation setup
+│   ├── components/
+│   │   ├── ScriptoriaComponents.js
+│   │   └── StyledComponents.js
+│   ├── navigation/
+│   │   └── AppNavigator.js    # Navigation setup
+│   ├── styles/
+│   │   ├── scriptoriaTheme.js # Scriptoria design theme
+│   │   └── theme.js
+│   ├── services/              # Business logic
+│   └── utils/                 # Helper functions
+├── assets/
+│   └── fonts/                 # Custom fonts (Playfair, Lora, Inter)
 ├── scripts/                   # Helper scripts
-│   ├── start-emulator.sh     # Launch Android emulator
-│   ├── test-app.sh           # Automated testing
-│   ├── view-logs.sh          # Log viewer
-│   └── debug-setup.sh        # Debug info
-└── android/                   # Android project files
+│   ├── start-emulator.sh      # Launch Android emulator
+│   ├── build-release.sh       # Build production APK/AAB
+│   ├── test-app.sh            # Automated testing
+│   ├── view-logs.sh           # Log viewer
+│   └── generate-keystore.sh   # Release signing setup
+├── android/                   # Android project files
+└── ios/                       # iOS project files
 ```
 
 ## Development Stack
@@ -151,8 +163,6 @@ This project uses React Native's **Legacy Architecture** (not the New Architectu
 - **Library Compatibility**: 100% compatibility with all our dependencies
 - **Development Speed**: No time spent fighting framework issues
 - **Future Migration**: Can upgrade to New Architecture when ecosystem matures (mid-2025)
-
-See [NEW_ARCHITECTURE_MIGRATION.md](NEW_ARCHITECTURE_MIGRATION.md) for detailed migration planning.
 
 ## Troubleshooting
 

@@ -7,7 +7,7 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}CamScanner Debug Logs${NC}"
+echo -e "${GREEN}Scriptoria Debug Logs${NC}"
 echo "===================="
 echo ""
 
@@ -25,7 +25,7 @@ echo ""
 echo -e "${YELLOW}Choose logging option:${NC}"
 echo "1. React Native logs only (recommended)"
 echo "2. Full Android logcat (verbose)"
-echo "3. CamScanner app logs only"
+echo "3. Scriptoria app logs only"
 echo "4. Clear logs and start fresh"
 echo ""
 read -p "Enter choice (1-4): " choice
@@ -44,10 +44,10 @@ case $choice in
         adb logcat
         ;;
     3)
-        echo -e "${GREEN}Starting CamScanner app logs...${NC}"
+        echo -e "${GREEN}Starting Scriptoria app logs...${NC}"
         echo "Press Ctrl+C to stop"
         echo ""
-        adb logcat | grep -i "camscanner\|reactnativejs\|console"
+        adb logcat | grep -i "scriptoria\|reactnativejs\|console"
         ;;
     4)
         echo -e "${GREEN}Clearing logs...${NC}"

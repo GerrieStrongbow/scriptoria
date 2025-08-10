@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script to build release APK and AAB for DocuSnap
+# Script to build release APK and AAB for Scriptoria
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/.."
 ANDROID_DIR="$PROJECT_DIR/android"
 
-echo "📦 Building DocuSnap for release..."
+echo "📦 Building Scriptoria for release..."
 echo ""
 
 # Check if keystore.properties exists
@@ -16,15 +16,15 @@ if [ ! -f "$ANDROID_DIR/keystore.properties" ]; then
     echo "Please create $ANDROID_DIR/keystore.properties with:"
     echo "  storePassword=YOUR_STORE_PASSWORD"
     echo "  keyPassword=YOUR_KEY_PASSWORD"
-    echo "  keyAlias=docusnap-key"
-    echo "  storeFile=docusnap-release.keystore"
+    echo "  keyAlias=scriptoria-key"
+    echo "  storeFile=scriptoria-release.keystore"
     echo ""
     echo "First run: ./scripts/generate-keystore.sh"
     exit 1
 fi
 
 # Check if keystore file exists
-if [ ! -f "$ANDROID_DIR/app/docusnap-release.keystore" ]; then
+if [ ! -f "$ANDROID_DIR/app/scriptoria-release.keystore" ]; then
     echo "❌ Release keystore not found!"
     echo "Please run: ./scripts/generate-keystore.sh"
     exit 1
@@ -75,15 +75,15 @@ mkdir -p "$RELEASE_DIR"
 
 echo ""
 echo "📂 Copying release files to: $RELEASE_DIR"
-cp "$APK_PATH" "$RELEASE_DIR/DocuSnap.apk" 2>/dev/null
-cp "$AAB_PATH" "$RELEASE_DIR/DocuSnap.aab" 2>/dev/null
+cp "$APK_PATH" "$RELEASE_DIR/Scriptoria.apk" 2>/dev/null
+cp "$AAB_PATH" "$RELEASE_DIR/Scriptoria.aab" 2>/dev/null
 
 echo ""
 echo "🎉 Build completed successfully!"
 echo ""
 echo "📋 Next steps:"
-echo "1. Test the APK on a physical device: $RELEASE_DIR/DocuSnap.apk"
-echo "2. Upload the AAB to Google Play Console: $RELEASE_DIR/DocuSnap.aab"
+echo "1. Test the APK on a physical device: $RELEASE_DIR/Scriptoria.apk"
+echo "2. Upload the AAB to Google Play Console: $RELEASE_DIR/Scriptoria.aab"
 echo "3. Prepare store listing (screenshots, description, etc.)"
 echo ""
 echo "💡 Tips:"

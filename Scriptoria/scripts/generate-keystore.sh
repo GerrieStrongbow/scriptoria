@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script to generate a release keystore for DocuSnap
+# Script to generate a release keystore for Scriptoria
 
 KEYSTORE_DIR="../android/app"
-KEYSTORE_FILE="docusnap-release.keystore"
-KEY_ALIAS="docusnap-key"
+KEYSTORE_FILE="scriptoria-release.keystore"
+KEY_ALIAS="scriptoria-key"
 
-echo "🔑 Generating release keystore for DocuSnap..."
+echo "🔑 Generating release keystore for Scriptoria..."
 echo ""
 echo "⚠️  IMPORTANT: Remember your passwords and keep this keystore file safe!"
 echo "You'll need it for all future app updates."
