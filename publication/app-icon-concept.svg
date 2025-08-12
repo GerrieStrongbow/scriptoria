@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background - Warm parchment with subtle texture -->
+  <rect width="192" height="192" rx="48" fill="#F8F1E7"/>
+  
+  <!-- Shadow/depth layer -->
+  <rect x="8" y="8" width="176" height="176" rx="40" fill="url(#shadowGradient)" opacity="0.15"/>
+  
+  <!-- Main parchment background -->
+  <rect x="16" y="16" width="160" height="160" rx="32" fill="url(#parchmentGradient)" stroke="#D8CBB9" stroke-width="2"/>
+  
+  <!-- Manuscript page effect -->
+  <rect x="28" y="28" width="136" height="136" rx="20" fill="#FFFBF4" stroke="#E6D8C7" stroke-width="1" opacity="0.9"/>
+  
+  <!-- Decorative manuscript border -->
+  <rect x="36" y="36" width="120" height="120" rx="12" fill="none" stroke="#C6A664" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- Central quill feather -->
+  <g transform="translate(96, 96)">
+    <!-- Quill shaft -->
+    <line x1="-8" y1="32" x2="8" y2="-32" stroke="#4B3621" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Feather vanes -->
+    <path d="M8 -32 C12 -28, 16 -20, 18 -8 C16 -4, 12 0, 8 4 C4 8, 0 12, -4 16 C-8 20, -12 24, -8 32" 
+          fill="url(#featherGradient)" stroke="#4B3621" stroke-width="1.5" opacity="0.9"/>
+    
+    <!-- Feather details -->
+    <path d="M8 -28 C10 -24, 12 -16, 14 -4" stroke="#72634F" stroke-width="1" opacity="0.7"/>
+    <path d="M8 -24 C10 -20, 11 -12, 12 0" stroke="#72634F" stroke-width="0.8" opacity="0.6"/>
+    <path d="M8 -20 C9 -16, 10 -8, 10 4" stroke="#72634F" stroke-width="0.6" opacity="0.5"/>
+  </g>
+  
+  <!-- Ink dot at quill tip -->
+  <circle cx="104" cy="64" r="2.5" fill="#1E1B18" opacity="0.8"/>
+  
+  <!-- Decorative manuscript illumination corners -->
+  <g opacity="0.4">
+    <!-- Top left -->
+    <circle cx="48" cy="48" r="3" fill="#C6A664"/>
+    <circle cx="48" cy="48" r="1.5" fill="#F8F1E7"/>
+    
+    <!-- Top right -->
+    <circle cx="144" cy="48" r="3" fill="#C6A664"/>
+    <circle cx="144" cy="48" r="1.5" fill="#F8F1E7"/>
+    
+    <!-- Bottom left -->
+    <circle cx="48" cy="144" r="3" fill="#C6A664"/>
+    <circle cx="48" cy="144" r="1.5" fill="#F8F1E7"/>
+    
+    <!-- Bottom right -->
+    <circle cx="144" cy="144" r="3" fill="#C6A664"/>
+    <circle cx="144" cy="144" r="1.5" fill="#F8F1E7"/>
+  </g>
+  
+  <!-- Subtle text lines to suggest document scanning -->
+  <g opacity="0.2" stroke="#4B3621" stroke-width="1">
+    <line x1="52" y1="120" x2="88" y2="120"/>
+    <line x1="52" y1="128" x2="108" y2="128"/>
+    <line x1="52" y1="136" x2="76" y2="136"/>
+  </g>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E1B18;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#1E1B18;stop-opacity:0.3"/>
+    </linearGradient>
+    
+    <linearGradient id="parchmentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FAF4EA"/>
+      <stop offset="50%" style="stop-color:#F8F1E7"/>
+      <stop offset="100%" style="stop-color:#F3E9DD"/>
+    </linearGradient>
+    
+    <linearGradient id="featherGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C6A664"/>
+      <stop offset="30%" style="stop-color:#D6BC7E"/>
+      <stop offset="70%" style="stop-color:#C6A664"/>
+      <stop offset="100%" style="stop-color:#9E8A48"/>
+    </linearGradient>
+  </defs>
+</svg>
