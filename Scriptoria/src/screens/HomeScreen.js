@@ -233,24 +233,68 @@ const HomeScreen = ({ navigation }) => {
     }
 
     try {
-      const fileExtension = selectedDocument.name.split('.').pop();
-      const newFileName = `${newName.trim()}.${fileExtension}`;
-      const newPath = `${documentsDir}/${newFileName}`;
+      const trimmedNewName = newName.trim();
 
-      // Check if file with new name already exists
-      const exists = await RNFS.exists(newPath);
-      if (exists && newPath !== selectedDocument.path) {
-        Alert.alert('Error', 'A document with this name already exists');
-        return;
+      if (selectedDocument.isMultiPage && selectedDocument.allPages) {
+        // Multi-page document - rename all pages
+        console.log(`Renaming multi-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
+        
+        // Check if any file with new name pattern already exists
+        const newPagePath = `${documentsDir}/${trimmedNewName}_page_1.jpg`;
+        const exists = await RNFS.exists(newPagePath);
+        if (exists && !selectedDocument.allPages.some(page => page.path === newPagePath)) {
+          Alert.alert('Error', 'A document with this name already exists');
+          return;
+        }
+
+        // Rename all pages
+        for (const page of selectedDocument.allPages) {
+          const oldPagePath = page.path;
+          const newPagePath = `${documentsDir}/${trimmedNewName}_page_${page.pageNumber}.jpg`;
+          
+          console.log(`Renaming page: ${oldPagePath} -> ${newPagePath}`);
+          await RNFS.moveFile(oldPagePath, newPagePath);
+        }
+
+        // Rename metadata file if it exists
+        const oldMetadataPath = `${documentsDir}/${selectedDocument.name}.metadata.json`;
+        const newMetadataPath = `${documentsDir}/${trimmedNewName}.metadata.json`;
+        try {
+          const metadataExists = await RNFS.exists(oldMetadataPath);
+          if (metadataExists) {
+            await RNFS.moveFile(oldMetadataPath, newMetadataPath);
+            console.log(`Renamed metadata: ${oldMetadataPath} -> ${newMetadataPath}`);
+          }
+        } catch (metadataError) {
+          console.warn('Error renaming metadata file:', metadataError);
+          // Don't fail the whole operation if metadata rename fails
+        }
+
+      } else {
+        // Single page document - original logic
+        console.log(`Renaming single-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
+        
+        const fileExtension = selectedDocument.name.split('.').pop();
+        const newFileName = `${trimmedNewName}.${fileExtension}`;
+        const newPath = `${documentsDir}/${newFileName}`;
+
+        // Check if file with new name already exists
+        const exists = await RNFS.exists(newPath);
+        if (exists && newPath !== selectedDocument.path) {
+          Alert.alert('Error', 'A document with this name already exists');
+          return;
+        }
+
+        // Rename the file
+        await RNFS.moveFile(selectedDocument.path, newPath);
       }
-
-      // Rename the file
-      await RNFS.moveFile(selectedDocument.path, newPath);
 
       setRenameModalVisible(false);
       setSelectedDocument(null);
       setNewName('');
       loadDocuments();
+      
+      console.log(`Successfully renamed document to "${trimmedNewName}"`);
     } catch (error) {
       console.error('Error renaming document:', error);
       Alert.alert('Error', 'Failed to rename document');
