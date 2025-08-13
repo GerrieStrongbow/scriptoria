@@ -64,37 +64,78 @@ const ScanScreen = ({ navigation }) => {
         await RNFS.mkdir(documentsDir);
       }
 
-      // Generate unique "Untitled Manuscript" filename
+      // Generate unique "Untitled Manuscript" base name
       const baseFileName = 'Untitled Manuscript';
-      let fileName = `${baseFileName}.jpg`;
+      let baseDocumentName = baseFileName;
       let counter = 1;
 
-      // Check if file exists and increment counter if needed
-      while (await RNFS.exists(`${documentsDir}/${fileName}`)) {
-        fileName = `${baseFileName} (${counter}).jpg`;
+      // Check if base name exists and increment counter if needed
+      const checkExists = async (baseName) => {
+        if (scannedPages.length === 1) {
+          return await RNFS.exists(`${documentsDir}/${baseName}.jpg`);
+        } else {
+          return await RNFS.exists(`${documentsDir}/${baseName}_page_1.jpg`);
+        }
+      };
+
+      while (await checkExists(baseDocumentName)) {
+        baseDocumentName = `${baseFileName} (${counter})`;
         counter++;
       }
 
-      // For now, save the first page as the main document
-      // In a future version, we'll combine all pages into a PDF
-      const mainImagePath = scannedPages[0];
-      const destPath = `${documentsDir}/${fileName}`;
+      console.log(`Saving ${scannedPages.length} pages for document: ${baseDocumentName}`);
 
-      // Check if source file exists before copying
-      const sourceExists = await RNFS.exists(mainImagePath);
-      if (!sourceExists) {
-        throw new Error(`Source file not found: ${mainImagePath}`);
+      // Save all scanned pages
+      const savedPages = [];
+      for (let i = 0; i < scannedPages.length; i++) {
+        const sourcePath = scannedPages[i];
+        
+        // Generate filename based on page count
+        let fileName;
+        if (scannedPages.length === 1) {
+          fileName = `${baseDocumentName}.jpg`;
+        } else {
+          fileName = `${baseDocumentName}_page_${i + 1}.jpg`;
+        }
+        
+        const destPath = `${documentsDir}/${fileName}`;
+
+        // Check if source file exists before copying
+        const sourceExists = await RNFS.exists(sourcePath);
+        if (!sourceExists) {
+          throw new Error(`Source file not found: ${sourcePath}`);
+        }
+
+        console.log(`Copying page ${i + 1}: ${sourcePath} -> ${destPath}`);
+        
+        // Copy the scanned image to documents directory
+        await RNFS.copyFile(sourcePath, destPath);
+        
+        // Verify the destination file was created
+        const destExists = await RNFS.exists(destPath);
+        if (!destExists) {
+          throw new Error(`Failed to create destination file: ${destPath}`);
+        }
+
+        savedPages.push(destPath);
       }
 
-      console.log(`Copying from ${mainImagePath} to ${destPath}`);
-      
-      // Copy the scanned image to documents directory
-      await RNFS.copyFile(mainImagePath, destPath);
-      
-      // Verify the destination file was created
-      const destExists = await RNFS.exists(destPath);
-      if (!destExists) {
-        throw new Error(`Failed to create destination file: ${destPath}`);
+      // If it's a multi-page document, create a metadata file to track pages
+      if (scannedPages.length > 1) {
+        const metadataPath = `${documentsDir}/${baseDocumentName}.metadata.json`;
+        const metadata = {
+          documentName: baseDocumentName,
+          pageCount: scannedPages.length,
+          pages: savedPages.map((path, index) => ({
+            pageNumber: index + 1,
+            filePath: path,
+            fileName: `${baseDocumentName}_page_${index + 1}.jpg`
+          })),
+          createdAt: new Date().toISOString()
+        };
+        
+        await RNFS.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf8');
+        console.log(`Created metadata file: ${metadataPath}`);
       }
 
       // Clean up temp files (only if they still exist)

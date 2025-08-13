@@ -71,11 +71,79 @@ const HomeScreen = ({ navigation }) => {
       }
 
       const files = await RNFS.readDir(documentsDir);
-      const documentFiles = files
-        .filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png'))
+      
+      // Group documents by handling multi-page documents
+      const documentGroups = new Map();
+      const metadataFiles = new Set();
+      
+      for (const file of files) {
+        if (file.name.endsWith('.metadata.json')) {
+          metadataFiles.add(file.name);
+          continue;
+        }
+        
+        if (!(file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png'))) {
+          continue;
+        }
+        
+        // Check if this is a multi-page document page
+        const pageMatch = file.name.match(/^(.+)_page_(\d+)\.jpg$/);
+        if (pageMatch) {
+          const [, baseName, pageNum] = pageMatch;
+          // Use a unique key for multi-page documents to avoid conflicts
+          const multiPageKey = `MULTIPAGE:${baseName}`;
+          if (!documentGroups.has(multiPageKey)) {
+            documentGroups.set(multiPageKey, {
+              baseName,
+              isMultiPage: true,
+              pages: [],
+              mtime: file.mtime
+            });
+          }
+          documentGroups.get(multiPageKey).pages.push({
+            ...file,
+            pageNumber: parseInt(pageNum, 10)
+          });
+        } else {
+          // Single page document
+          const baseName = file.name.replace(/\.[^/.]+$/, '');
+          // Use a unique key for single-page documents to avoid conflicts
+          const singlePageKey = `SINGLEPAGE:${baseName}`;
+          documentGroups.set(singlePageKey, {
+            baseName,
+            isMultiPage: false,
+            pages: [file],
+            mtime: file.mtime
+          });
+        }
+      }
+      
+      // Convert groups to document objects, using first page as display
+      const documentFiles = Array.from(documentGroups.values())
+        .map(group => {
+          if (group.isMultiPage) {
+            // Sort pages by page number and use first page for display
+            group.pages.sort((a, b) => a.pageNumber - b.pageNumber);
+            const firstPage = group.pages[0];
+            return {
+              ...firstPage,
+              name: group.baseName,
+              isMultiPage: true,
+              pageCount: group.pages.length,
+              allPages: group.pages
+            };
+          } else {
+            return {
+              ...group.pages[0],
+              isMultiPage: false,
+              pageCount: 1
+            };
+          }
+        })
         .sort((a, b) => b.mtime - a.mtime);
+      
       setDocuments(documentFiles);
-      console.log(`Loaded ${documentFiles.length} documents`);
+      console.log(`Loaded ${documentFiles.length} documents (${documentFiles.filter(d => d.isMultiPage).length} multi-page)`);
 
       // Debug: Log first document to see structure
       if (documentFiles.length > 0) {
@@ -89,10 +157,13 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const deleteDocument = async (filePath) => {
+  const deleteDocument = async (document) => {
+    const documentName = document.isMultiPage ? document.name : document.name.replace(/\.[^/.]+$/, '');
+    const pageText = document.isMultiPage ? ` (${document.pageCount} pages)` : '';
+    
     Alert.alert(
       'Delete Document',
-      'Are you sure you want to delete this document?',
+      `Are you sure you want to delete "${documentName}"${pageText}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -102,7 +173,34 @@ const HomeScreen = ({ navigation }) => {
             // Wrap in anonymous function to handle async properly
             (async () => {
               try {
-                await RNFS.unlink(filePath);
+                if (document.isMultiPage && document.allPages) {
+                  // Delete all pages for multi-page document
+                  for (const page of document.allPages) {
+                    try {
+                      await RNFS.unlink(page.path);
+                      console.log(`Deleted page: ${page.path}`);
+                    } catch (error) {
+                      console.error(`Error deleting page ${page.path}:`, error);
+                    }
+                  }
+                  
+                  // Delete metadata file if it exists
+                  const metadataPath = `${documentsDir}/${document.name}.metadata.json`;
+                  try {
+                    const metadataExists = await RNFS.exists(metadataPath);
+                    if (metadataExists) {
+                      await RNFS.unlink(metadataPath);
+                      console.log(`Deleted metadata: ${metadataPath}`);
+                    }
+                  } catch (error) {
+                    console.error(`Error deleting metadata:`, error);
+                  }
+                } else {
+                  // Delete single page document
+                  await RNFS.unlink(document.path);
+                  console.log(`Deleted document: ${document.path}`);
+                }
+                
                 loadDocuments();
               } catch (error) {
                 console.error('Error deleting document:', error);
@@ -170,7 +268,10 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.documentIcon} />
         <View style={styles.documentInfo}>
           <ScholarlyText manuscript style={styles.documentName}>
-            {item.name.replace(/\.[^/.]+$/, '')}
+            {item.isMultiPage ? item.name : item.name.replace(/\.[^/.]+$/, '')}
+            {item.isMultiPage && (
+              <AnnotationText> ({item.pageCount} pages)</AnnotationText>
+            )}
           </ScholarlyText>
           <AnnotationText>
             Saved on {new Date(item.mtime).toLocaleDateString('en-US', {
@@ -190,7 +291,7 @@ const HomeScreen = ({ navigation }) => {
           <DeleteAction
             onPress={(e) => {
               e.stopPropagation();
-              deleteDocument(item.path);
+              deleteDocument(item);
             }}
           />
         </View>

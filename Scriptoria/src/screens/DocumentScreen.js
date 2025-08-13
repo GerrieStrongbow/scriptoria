@@ -1,20 +1,21 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   BackHandler,
+  FlatList,
   Image,
   Modal,
-  ScrollView,
   StatusBar,
   StyleSheet,
   View,
 } from 'react-native';
 import { createPdf } from 'react-native-images-to-pdf';
+import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import Feather from 'react-native-vector-icons/Feather';
 import {
+  AnnotationText,
   IlluminatedButton,
   ManuscriptContainer,
   ManuscriptHeading,
@@ -27,8 +28,7 @@ import {
 const DocumentScreen = ({ route, navigation }) => {
   const { document } = route.params;
   const [shareModalVisible, setShareModalVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState(1);
+  const [pages, setPages] = useState([]);
 
   useEffect(() => {
     // Handle Android hardware back to go back instead of exiting
@@ -41,68 +41,95 @@ const DocumentScreen = ({ route, navigation }) => {
   }, [navigation]);
 
   useEffect(() => {
-    // Compute image aspect ratio to render full-width with correct height
-    const uri = `file://${document.path}`;
-    // Image.getSize isn't imported separately; use RN Image API via current import
-    Image.getSize(
-      uri,
-      (w, h) => {
-        if (w && h) setAspectRatio(w / h);
-      },
-      () => { }
-    );
-  }, [document.path]);
+    // Load all pages for the document
+    const loadDocumentPages = async () => {
+      try {
+        if (document.isMultiPage && document.allPages) {
+          // Multi-page document - use all pages
+          const getPageData = (page, index) => {
+            return new Promise((resolve) => {
+              Image.getSize(
+                `file://${page.path}`,
+                (w, h) => {
+                  resolve({
+                    path: page.path,
+                    aspectRatio: w / h,
+                    pageNumber: page.pageNumber || index + 1
+                  });
+                },
+                () => {
+                  resolve({
+                    path: page.path,
+                    aspectRatio: 1,
+                    pageNumber: page.pageNumber || index + 1
+                  });
+                }
+              );
+            });
+          };
+          
+          const pageData = await Promise.all(
+            document.allPages.map((page, index) => getPageData(page, index))
+          );
+          const sortedPages = [...pageData].sort((a, b) => a.pageNumber - b.pageNumber);
+          setPages(sortedPages);
+        } else {
+          // Single page document
+          Image.getSize(
+            `file://${document.path}`,
+            (w, h) => {
+              setPages([{
+                path: document.path,
+                aspectRatio: w / h,
+                pageNumber: 1
+              }]);
+            },
+            () => {
+              setPages([{
+                path: document.path,
+                aspectRatio: 1,
+                pageNumber: 1
+              }]);
+            }
+          );
+        }
+      } catch (error) {
+        console.error('Error loading document pages:', error);
+        // Fallback to single page
+        setPages([{
+          path: document.path,
+          aspectRatio: 1,
+          pageNumber: 1
+        }]);
+      }
+    };
+
+    loadDocumentPages();
+  }, [document]);
 
   const shareAsJPG = async () => {
     setShareModalVisible(false);
     try {
-      // Debug logging
-      console.log('Document object:', JSON.stringify(document, null, 2));
-      console.log('Document path:', document?.path);
-      console.log('Document name:', document?.name);
-
-      // Check for valid document and path
-      if (!document) {
-        Alert.alert('Error', 'No document provided');
+      if (pages.length === 0) {
+        Alert.alert('Error', 'No pages to share');
         return;
       }
 
-      const documentPath = document.path;
-
-      if (!documentPath) {
-        Alert.alert('Error', 'Document path is missing');
-        return;
-      }
-
-      // Verify file exists before sharing
-      const fileExists = await require('react-native-fs').exists(documentPath);
-      if (!fileExists) {
-        Alert.alert('Error', 'Document file not found');
-        return;
-      }
-
-      // Copy file to a shareable location first
-      const RNFS = require('react-native-fs');
-      const timestamp = Date.now();
-      const sharedFileName = `scanned_doc_${timestamp}.jpg`;
-      const sharedPath = `${RNFS.CachesDirectoryPath}/${sharedFileName}`;
-
-      console.log('Copying file for sharing:', documentPath, '->', sharedPath);
-
-      try {
-        // Copy to cache directory for sharing
-        await RNFS.copyFile(documentPath, sharedPath);
-        console.log('File copied successfully');
-
-        // Verify the copied file exists
-        const copiedFileExists = await RNFS.exists(sharedPath);
-        console.log('Copied file exists:', copiedFileExists);
-
-        if (!copiedFileExists) {
-          throw new Error('Failed to copy file for sharing');
+      if (pages.length === 1) {
+        // Single page - share directly
+        const documentPath = pages[0].path;
+        const fileExists = await RNFS.exists(documentPath);
+        if (!fileExists) {
+          Alert.alert('Error', 'Document file not found');
+          return;
         }
 
-        // Share the copied file
+        const timestamp = Date.now();
+        const sharedFileName = `scanned_doc_${timestamp}.jpg`;
+        const sharedPath = `${RNFS.CachesDirectoryPath}/${sharedFileName}`;
+
+        await RNFS.copyFile(documentPath, sharedPath);
+
         const shareOptions = {
           title: 'Scanned Document',
           message: 'Scanned document from Scriptoria',
@@ -110,41 +137,32 @@ const DocumentScreen = ({ route, navigation }) => {
           type: 'image/jpeg',
         };
 
-        console.log('Sharing file:', shareOptions);
         await Share.open(shareOptions);
 
-        // Clean up the temporary file after a delay
-        setTimeout(() => {
-          // Wrap in anonymous function to handle async properly
-          (async () => {
-            try {
-              await RNFS.unlink(sharedPath);
-              console.log('Temporary share file cleaned up');
-            } catch (cleanupError) {
-              console.log('Failed to cleanup temp file:', cleanupError);
-            }
-          })();
-        }, 10000); // 10 seconds delay
-
-      } catch (copyError) {
-        // Handle user cancellation without logging errors
-        if (copyError?.message?.includes('User did not share')) {
-          return;
-        }
-
-        // Fallback: try sharing original file directly
-        const shareOptions = {
-          title: 'Scanned Document',
-          url: `file://${documentPath}`,
-          type: 'image/jpeg',
-        };
-
-        await Share.open(shareOptions);
+        // Clean up after delay
+        setTimeout(async () => {
+          try {
+            await RNFS.unlink(sharedPath);
+          } catch (cleanupError) {
+            console.log('Failed to cleanup temp file:', cleanupError);
+          }
+        }, 10000);
+      } else {
+        // Multi-page - create a ZIP file with all pages
+        Alert.alert(
+          'Multiple Pages',
+          `This document has ${pages.length} pages. For multi-page sharing, use PDF format instead.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Share as PDF', onPress: () => { shareAsPDF(); } }
+          ]
+        );
       }
     } catch (error) {
       if (error?.message?.includes('User did not share')) {
         return;
       }
+      console.error('Error sharing JPG:', error);
       Alert.alert('Error', 'Failed to share document. Please try again.');
     }
   };
@@ -153,36 +171,33 @@ const DocumentScreen = ({ route, navigation }) => {
     setShareModalVisible(false);
 
     try {
-      const RNFS = require('react-native-fs');
-
-      console.log('Converting image to PDF:', document.path);
-
-      // Verify source image exists
-      const imageExists = await RNFS.exists(document.path);
-      if (!imageExists) {
-        throw new Error('Source image not found');
+      if (pages.length === 0) {
+        Alert.alert('Error', 'No pages to create PDF');
+        return;
       }
 
-      // Get image stats for debugging
-      const imageStat = await RNFS.stat(document.path);
-      console.log('Image file size:', imageStat.size, 'bytes');
+      console.log(`Converting ${pages.length} page(s) to PDF`);
 
-      // Create PDF from image using react-native-images-to-pdf
-      // Use the document's actual name (without extension) + .pdf
-      const documentNameWithoutExt = document.name.replace(/\.[^/.]+$/, '');
+      // Verify all pages exist
+      for (const page of pages) {
+        const pageExists = await RNFS.exists(page.path);
+        if (!pageExists) {
+          throw new Error(`Page not found: ${page.path}`);
+        }
+      }
+
+      // Create PDF from all pages
+      const documentNameWithoutExt = document.isMultiPage ? document.name : document.name.replace(/\.[^/.]+$/, '');
       const pdfFileName = `${documentNameWithoutExt}.pdf`;
       const outputPath = `${RNFS.CachesDirectoryPath}/${pdfFileName}`;
 
       console.log('Creating PDF with filename:', pdfFileName);
 
-      // Configure PDF creation options
+      // Configure PDF creation options with all pages
       const options = {
-        pages: [{
-          imagePath: document.path,
-          // Optional: you can specify width/height if needed
-          // width: 595, // A4 width in points
-          // height: 842, // A4 height in points
-        }],
+        pages: pages.map(page => ({
+          imagePath: page.path,
+        })),
         outputPath: outputPath,
       };
 
@@ -191,16 +206,13 @@ const DocumentScreen = ({ route, navigation }) => {
 
       // Verify PDF file exists
       const pdfExists = await RNFS.exists(pdfPath);
-
       if (!pdfExists) {
         throw new Error('PDF file was not created successfully');
       }
 
-      // Get PDF file stats for debugging
-      const pdfStat = await RNFS.stat(pdfPath);
       // Share the PDF
       const shareOptions = {
-        title: 'Scanned Document PDF',
+        title: `Scanned Document PDF (${pages.length} page${pages.length > 1 ? 's' : ''})`,
         message: 'Scanned document from Scriptoria',
         url: `file://${pdfPath}`,
         type: 'application/pdf',
@@ -208,22 +220,20 @@ const DocumentScreen = ({ route, navigation }) => {
       await Share.open(shareOptions);
 
       // Clean up the temporary file after a delay
-      setTimeout(() => {
-        // Wrap in anonymous function to handle async properly
-        (async () => {
-          try {
-            await RNFS.unlink(pdfPath);
-            console.log('Temporary PDF file cleaned up');
-          } catch (cleanupError) {
-            console.log('Failed to cleanup temp PDF:', cleanupError);
-          }
-        })();
-      }, 10000); // 10 seconds delay
+      setTimeout(async () => {
+        try {
+          await RNFS.unlink(pdfPath);
+          console.log('Temporary PDF file cleaned up');
+        } catch (cleanupError) {
+          console.log('Failed to cleanup temp PDF:', cleanupError);
+        }
+      }, 10000);
 
     } catch (error) {
       if (error?.message?.includes('User did not share')) {
         return;
       }
+      console.error('Error creating PDF:', error);
       Alert.alert('Error', 'Failed to create or share PDF. Please try again.');
     }
   };
@@ -249,28 +259,48 @@ const DocumentScreen = ({ route, navigation }) => {
           </ParchmentButton>
         </View>
 
-        {/* Document Viewer (edge-to-edge) */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          maximumZoomScale={5}
-          minimumZoomScale={1}
-          pinchGestureEnabled={true}
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-        >
-          <Image
-            source={{ uri: `file://${document.path}` }}
-            style={[styles.image, { aspectRatio }]}
-            resizeMode="contain"
-          />
-        </ScrollView>
+        {/* Document Viewer */}
+        {pages.length > 0 && (
+          pages.length === 1 ? (
+            // Single page - no scrolling
+            <View style={styles.singlePageContainer}>
+              <Image
+                source={{ uri: `file://${pages[0].path}` }}
+                style={[styles.singlePageImage, { aspectRatio: pages[0].aspectRatio }]}
+                resizeMode="contain"
+              />
+            </View>
+          ) : (
+            // Multi-page - vertical scrolling
+            <FlatList
+              data={pages}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              keyExtractor={(item, index) => `page-${index}`}
+              renderItem={({ item, index }) => (
+                <View style={styles.verticalPageContainer}>
+                  <Image
+                    source={{ uri: `file://${item.path}` }}
+                    style={[styles.verticalPageImage, { aspectRatio: item.aspectRatio }]}
+                    resizeMode="contain"
+                  />
+                  {index < pages.length - 1 && <View style={styles.pageSeparator} />}
+                </View>
+              )}
+            />
+          )
+        )}
 
-        {/* Footer with document name (no extension) */}
+        {/* Footer with document name and page indicator */}
         <View style={styles.docFooter}>
           <ScholarlyText manuscript style={styles.docName}>
-            {document.name.replace(/\.[^/.]+$/, '')}
+            {document.isMultiPage ? document.name : document.name.replace(/\.[^/.]+$/, '')}
           </ScholarlyText>
+          {pages.length > 1 && (
+            <AnnotationText style={styles.pageIndicator}>
+              {pages.length} pages • Scroll to view all
+            </AnnotationText>
+          )}
         </View>
 
         {/* Share Format Modal */}
@@ -307,21 +337,6 @@ const DocumentScreen = ({ route, navigation }) => {
           </View>
         </Modal>
 
-        {/* Loading Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={isLoading}
-        >
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingContent}>
-              <ActivityIndicator size="large" color={scriptoriaTheme.colors.primary} />
-              <ScholarlyText style={styles.loadingText}>
-                Illuminating your manuscript...
-              </ScholarlyText>
-            </View>
-          </View>
-        </Modal>
       </ManuscriptContainer>
     </Scriptorium>
   );
@@ -361,19 +376,47 @@ const styles = StyleSheet.create({
   },
 
   // Document viewer styles
-
-  scrollView: {
+  singlePageContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scriptoriaTheme.spacing.base,
+    paddingVertical: scriptoriaTheme.spacing.sm,
   },
 
-  scrollContent: {
-    flexGrow: 1,
+  singlePageImage: {
+    width: '100%',
+    maxHeight: '100%',
+  },
+
+  verticalPageContainer: {
     justifyContent: 'center',
-    alignItems: 'stretch',
+    alignItems: 'center',
+    paddingHorizontal: scriptoriaTheme.spacing.base,
+    paddingVertical: scriptoriaTheme.spacing.sm,
+  },
+
+  verticalPageImage: {
+    width: '100%',
+    minHeight: 200,
+    maxHeight: 600,
+  },
+
+  pageSeparator: {
+    height: scriptoriaTheme.spacing.sm,
+    backgroundColor: 'transparent',
+  },
+
+  pageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scriptoriaTheme.spacing.sm,
   },
 
   image: {
-    width: '100%',
+    width: '95%',
+    maxHeight: '90%',
   },
 
   docFooter: {
@@ -385,6 +428,13 @@ const styles = StyleSheet.create({
     fontFamily: scriptoriaTheme.typography.fonts.serif,
     fontSize: scriptoriaTheme.typography.sizes.base,
     color: scriptoriaTheme.colors.text.secondary,
+  },
+
+  pageIndicator: {
+    marginTop: scriptoriaTheme.spacing.xs,
+    fontSize: scriptoriaTheme.typography.sizes.sm,
+    color: scriptoriaTheme.colors.text.tertiary,
+    textAlign: 'center',
   },
 
   // Removed parchment border
@@ -438,41 +488,6 @@ const styles = StyleSheet.create({
   cancelModalButton: {
     borderRadius: scriptoriaTheme.borderRadius.base,
   },
-
-  // Loading modal styles - Illuminated
-  loadingOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(47, 47, 47, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  loadingContent: {
-    backgroundColor: scriptoriaTheme.colors.cardBackground,
-    borderRadius: scriptoriaTheme.borderRadius.xl,
-    padding: scriptoriaTheme.spacing.xl,
-    alignItems: 'center',
-    minWidth: 240,
-    shadowColor: scriptoriaTheme.colors.shadowWarm,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: scriptoriaTheme.colors.border,
-    borderTopWidth: 3,
-    borderTopColor: scriptoriaTheme.colors.primary,
-  },
-
-  loadingText: {
-    marginTop: scriptoriaTheme.spacing.base,
-    color: scriptoriaTheme.colors.text.secondary,
-    textAlign: 'center',
-    fontFamily: scriptoriaTheme.typography.fonts.serif,
-    fontSize: scriptoriaTheme.typography.sizes.base,
-    fontStyle: 'italic',
-    letterSpacing: 0.5,
-  },
 });
 
 DocumentScreen.propTypes = {
@@ -481,6 +496,8 @@ DocumentScreen.propTypes = {
       document: PropTypes.shape({
         path: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
+        isMultiPage: PropTypes.bool,
+        allPages: PropTypes.array,
       }).isRequired,
     }).isRequired,
   }).isRequired,
