@@ -128,7 +128,7 @@ export const QuillButton = ({ onPress, style, ...props }) => (
 // Action Buttons - Elegant and Sophisticated
 export const EditAction = ({ onPress, style, ...props }) => (
   <TouchableOpacity style={[styles.actionButton, styles.editAction, style]} onPress={onPress} {...props}>
-    <Feather name="edit-2" size={18} color={scriptoriaTheme.colors.deepUmber} />
+    <Feather name="feather" size={18} color={scriptoriaTheme.colors.deepUmber} />
   </TouchableOpacity>
 );
 
@@ -147,9 +147,8 @@ export const ShareAction = ({ onPress, style, ...props }) => (
 const styles = StyleSheet.create({
   // Typography Styles - Modern Sophisticated Serif
   scriptoriaTitle: {
-    fontFamily: scriptoriaTheme.typography.fonts.serifDisplay,
+    fontFamily: 'PlayfairDisplay-Bold',
     fontSize: scriptoriaTheme.typography.sizes['4xl'],
-    fontWeight: scriptoriaTheme.typography.weights.bold,
     color: scriptoriaTheme.colors.text.primary,
     textAlign: 'center',
     marginBottom: scriptoriaTheme.spacing.lg,

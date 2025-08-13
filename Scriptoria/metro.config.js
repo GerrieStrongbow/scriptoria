@@ -6,6 +6,12 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
+const config = {
+  resolver: {
+    alias: {
+      'promise/setimmediate': require.resolve('promise/setimmediate'),
+    },
+  },
+};
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

@@ -15,8 +15,8 @@ import {
   ManuscriptContainer,
   ManuscriptHeading,
   ScholarlyText,
-  scriptoriaTheme,
   Scriptorium,
+  scriptoriaTheme,
 } from '../components/ScriptoriaComponents';
 
 const ScanScreen = ({ navigation }) => {
@@ -35,8 +35,10 @@ const ScanScreen = ({ navigation }) => {
     })
       .then((response) => {
         if (response.scannedImages && response.scannedImages.length > 0) {
+          console.log('Scanned images received:', response.scannedImages);
           setScannedPages(response.scannedImages);
         } else {
+          console.log('No scanned images in response:', response);
           Alert.alert('No pages scanned', 'Please try again');
           navigation.goBack();
         }
@@ -62,29 +64,49 @@ const ScanScreen = ({ navigation }) => {
         await RNFS.mkdir(documentsDir);
       }
 
-      // Generate readable filename: Scan_YYMMDD_HHMM
-      const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const y = String(now.getFullYear()).slice(2);
-      const m = pad(now.getMonth() + 1);
-      const d = pad(now.getDate());
-      const hh = pad(now.getHours());
-      const mm = pad(now.getMinutes());
-      const formatted = `${y}${m}${d}_${hh}${mm}`;
+      // Generate unique "Untitled Manuscript" filename
+      const baseFileName = 'Untitled Manuscript';
+      let fileName = `${baseFileName}.jpg`;
+      let counter = 1;
+
+      // Check if file exists and increment counter if needed
+      while (await RNFS.exists(`${documentsDir}/${fileName}`)) {
+        fileName = `${baseFileName} (${counter}).jpg`;
+        counter++;
+      }
 
       // For now, save the first page as the main document
       // In a future version, we'll combine all pages into a PDF
       const mainImagePath = scannedPages[0];
-      const fileName = `Scan_${formatted}.jpg`;
       const destPath = `${documentsDir}/${fileName}`;
 
+      // Check if source file exists before copying
+      const sourceExists = await RNFS.exists(mainImagePath);
+      if (!sourceExists) {
+        throw new Error(`Source file not found: ${mainImagePath}`);
+      }
+
+      console.log(`Copying from ${mainImagePath} to ${destPath}`);
+      
       // Copy the scanned image to documents directory
       await RNFS.copyFile(mainImagePath, destPath);
+      
+      // Verify the destination file was created
+      const destExists = await RNFS.exists(destPath);
+      if (!destExists) {
+        throw new Error(`Failed to create destination file: ${destPath}`);
+      }
 
-      // Clean up temp files
+      // Clean up temp files (only if they still exist)
       for (const imagePath of scannedPages) {
         try {
-          await RNFS.unlink(imagePath);
+          const tempExists = await RNFS.exists(imagePath);
+          if (tempExists) {
+            await RNFS.unlink(imagePath);
+            console.log(`Cleaned up temp file: ${imagePath}`);
+          } else {
+            console.log(`Temp file already cleaned up: ${imagePath}`);
+          }
         } catch (error) {
           console.error('Error deleting temp file:', error);
         }
@@ -126,7 +148,7 @@ const ScanScreen = ({ navigation }) => {
         <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
         <View style={styles.centerContainer}>
           <View style={styles.loadingCard}>
-            <Feather name="camera" size={48} color={scriptoriaTheme.colors.primary} style={styles.scanIconFix} />
+            <Feather name="camera" size={48} color={scriptoriaTheme.colors.primary} style={styles.scanIcon} />
             <ActivityIndicator size="large" color={scriptoriaTheme.colors.primary} />
             <ManuscriptHeading style={styles.statusText}>Scanning document</ManuscriptHeading>
             <AnnotationText style={styles.subText}>Position your document within the frame</AnnotationText>
@@ -153,7 +175,7 @@ const ScanScreen = ({ navigation }) => {
       <ManuscriptContainer>
         <View style={styles.centerContainer}>
           <View style={styles.instructionCard}>
-            <Feather name="info" size={56} color={scriptoriaTheme.colors.primary} style={styles.scanIconFix} />
+            <Feather name="info" size={56} color={scriptoriaTheme.colors.primary} style={styles.instructionIcon} />
             <ManuscriptHeading style={styles.instructionTitle}>Prepare to scan</ManuscriptHeading>
             <ScholarlyText secondary style={styles.instructionText}>
               Ensure the document is well lit and flat before scanning

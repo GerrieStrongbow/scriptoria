@@ -57,7 +57,11 @@ const scriptoriaTheme = {
     fonts: {
       // If custom fonts are installed (assets/fonts + react-native-asset), these will be used.
       // Otherwise we gracefully fall back to platform defaults.
-      serifDisplay: Platform.select({ ios: 'PlayfairDisplay-Regular', android: 'PlayfairDisplay-Regular', default: 'PlayfairDisplay-Regular' }),
+      serifDisplay: Platform.select({ 
+        ios: 'PlayfairDisplay-Regular', 
+        android: 'PlayfairDisplay-Regular', 
+        default: 'PlayfairDisplay-Regular' 
+      }),
       serif: Platform.select({ ios: 'Lora-Regular', android: 'Lora-Regular', default: 'Lora-Regular' }),
       serifElegant: Platform.select({ ios: 'Lora-SemiBold', android: 'Lora-SemiBold', default: 'Lora-SemiBold' }),
 
