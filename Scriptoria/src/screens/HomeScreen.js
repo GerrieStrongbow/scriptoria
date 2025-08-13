@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -34,6 +34,7 @@ const HomeScreen = ({ navigation }) => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [newName, setNewName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const renameInputRef = useRef(null);
 
   const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
 
@@ -219,6 +220,14 @@ const HomeScreen = ({ navigation }) => {
     const nameWithoutExt = document.name.replace(/\.[^/.]+$/, '');
     setNewName(nameWithoutExt);
     setRenameModalVisible(true);
+    
+    // Focus and select text after modal animation
+    setTimeout(() => {
+      if (renameInputRef.current) {
+        renameInputRef.current.focus();
+        renameInputRef.current.setSelection(0, nameWithoutExt.length);
+      }
+    }, 300);
   };
 
   const renameDocument = async () => {
@@ -400,13 +409,15 @@ const HomeScreen = ({ navigation }) => {
               <ManuscriptHeading style={styles.modalTitle}>Rename Manuscript</ManuscriptHeading>
 
               <TextInput
+                ref={renameInputRef}
                 style={styles.input}
                 value={newName}
                 onChangeText={setNewName}
                 placeholder="Enter manuscript title..."
                 placeholderTextColor={scriptoriaTheme.colors.text.tertiary}
-                autoFocus={true}
-                selectTextOnFocus={true}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={renameDocument}
               />
 
               <View style={styles.modalButtonsColumn}>
