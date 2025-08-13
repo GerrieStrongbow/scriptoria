@@ -10,6 +10,7 @@ import {
 import DocumentScanner from 'react-native-document-scanner-plugin';
 import RNFS from 'react-native-fs';
 import Feather from 'react-native-vector-icons/Feather';
+import Logger from '../utils/logger';
 import {
   AnnotationText,
   ManuscriptContainer,
@@ -35,16 +36,16 @@ const ScanScreen = ({ navigation }) => {
     })
       .then((response) => {
         if (response.scannedImages && response.scannedImages.length > 0) {
-          console.log('Scanned images received:', response.scannedImages);
+          Logger.debug('ScanScreen', 'Scanned images received:', response.scannedImages.length, 'pages');
           setScannedPages(response.scannedImages);
         } else {
-          console.log('No scanned images in response:', response);
+          Logger.debug('ScanScreen', 'No scanned images in response');
           Alert.alert('No pages scanned', 'Please try again');
           navigation.goBack();
         }
       })
       .catch((error) => {
-        console.error('Scan error:', error);
+        Logger.error('Scan error:', error);
         Alert.alert('Scan Error', 'Failed to scan document');
         navigation.goBack();
       })
@@ -60,7 +61,7 @@ const ScanScreen = ({ navigation }) => {
       // Ensure documents directory exists
       const dirExists = await RNFS.exists(documentsDir);
       if (!dirExists) {
-        console.log('Creating documents directory for saving');
+        Logger.fileOp('create', documentsDir);
         await RNFS.mkdir(documentsDir);
       }
 
@@ -83,7 +84,7 @@ const ScanScreen = ({ navigation }) => {
         counter++;
       }
 
-      console.log(`Saving ${scannedPages.length} pages for document: ${baseDocumentName}`);
+      Logger.debug('ScanScreen', `Saving ${scannedPages.length} pages for document: ${baseDocumentName}`);
 
       // Save all scanned pages
       const savedPages = [];
@@ -106,7 +107,7 @@ const ScanScreen = ({ navigation }) => {
           throw new Error(`Source file not found: ${sourcePath}`);
         }
 
-        console.log(`Copying page ${i + 1}: ${sourcePath} -> ${destPath}`);
+        Logger.fileOp('copy', sourcePath, '→', destPath);
         
         // Copy the scanned image to documents directory
         await RNFS.copyFile(sourcePath, destPath);
@@ -135,7 +136,7 @@ const ScanScreen = ({ navigation }) => {
         };
         
         await RNFS.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf8');
-        console.log(`Created metadata file: ${metadataPath}`);
+        Logger.fileOp('create', metadataPath);
       }
 
       // Clean up temp files (only if they still exist)
@@ -144,12 +145,12 @@ const ScanScreen = ({ navigation }) => {
           const tempExists = await RNFS.exists(imagePath);
           if (tempExists) {
             await RNFS.unlink(imagePath);
-            console.log(`Cleaned up temp file: ${imagePath}`);
+            Logger.fileOp('cleanup', imagePath);
           } else {
-            console.log(`Temp file already cleaned up: ${imagePath}`);
+            Logger.debug('ScanScreen', `Temp file already cleaned up: ${imagePath}`);
           }
         } catch (error) {
-          console.error('Error deleting temp file:', error);
+          Logger.error('Error deleting temp file:', error);
         }
       }
 
@@ -164,7 +165,7 @@ const ScanScreen = ({ navigation }) => {
         ]
       );
     } catch (error) {
-      console.error('Save error:', error);
+      Logger.error('Save error:', error);
       Alert.alert('Error', 'Failed to save document');
     } finally {
       setProcessing(false);

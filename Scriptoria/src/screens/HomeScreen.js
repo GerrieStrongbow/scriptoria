@@ -10,6 +10,7 @@ import {
   View
 } from 'react-native';
 import RNFS from 'react-native-fs';
+import Logger from '../utils/logger';
 import {
   AnnotationText,
   DeleteAction,
@@ -52,11 +53,11 @@ const HomeScreen = ({ navigation }) => {
     try {
       const exists = await RNFS.exists(documentsDir);
       if (!exists) {
-        console.log('Creating documents directory:', documentsDir);
+        Logger.fileOp('create', documentsDir);
         await RNFS.mkdir(documentsDir);
       }
     } catch (error) {
-      console.error('Error creating documents directory:', error);
+      Logger.error('Error creating documents directory:', error);
     }
   };
 
@@ -66,7 +67,7 @@ const HomeScreen = ({ navigation }) => {
       // Ensure directory exists before reading
       const dirExists = await RNFS.exists(documentsDir);
       if (!dirExists) {
-        console.log('Documents directory does not exist, no documents to load');
+        Logger.debug('HomeScreen', 'Documents directory does not exist, no documents to load');
         setDocuments([]);
         return;
       }
@@ -144,14 +145,14 @@ const HomeScreen = ({ navigation }) => {
         .sort((a, b) => b.mtime - a.mtime);
       
       setDocuments(documentFiles);
-      console.log(`Loaded ${documentFiles.length} documents (${documentFiles.filter(d => d.isMultiPage).length} multi-page)`);
+      Logger.debug('HomeScreen', `Loaded ${documentFiles.length} documents (${documentFiles.filter(d => d.isMultiPage).length} multi-page)`);
 
       // Debug: Log first document to see structure
       if (documentFiles.length > 0) {
-        console.log('First document structure:', JSON.stringify(documentFiles[0], null, 2));
+        Logger.debug('HomeScreen', 'First document structure:', documentFiles[0]);
       }
     } catch (error) {
-      console.error('Error loading documents:', error);
+      Logger.error('Error loading documents:', error);
       setDocuments([]);
     } finally {
       setRefreshing(false);
@@ -179,9 +180,9 @@ const HomeScreen = ({ navigation }) => {
                   for (const page of document.allPages) {
                     try {
                       await RNFS.unlink(page.path);
-                      console.log(`Deleted page: ${page.path}`);
+                      Logger.fileOp('delete', page.path);
                     } catch (error) {
-                      console.error(`Error deleting page ${page.path}:`, error);
+                      Logger.error(`Error deleting page ${page.path}:`, error);
                     }
                   }
                   
@@ -191,20 +192,20 @@ const HomeScreen = ({ navigation }) => {
                     const metadataExists = await RNFS.exists(metadataPath);
                     if (metadataExists) {
                       await RNFS.unlink(metadataPath);
-                      console.log(`Deleted metadata: ${metadataPath}`);
+                      Logger.fileOp('delete', metadataPath);
                     }
                   } catch (error) {
-                    console.error(`Error deleting metadata:`, error);
+                    Logger.error(`Error deleting metadata:`, error);
                   }
                 } else {
                   // Delete single page document
                   await RNFS.unlink(document.path);
-                  console.log(`Deleted document: ${document.path}`);
+                  Logger.fileOp('delete', document.path);
                 }
                 
                 loadDocuments();
               } catch (error) {
-                console.error('Error deleting document:', error);
+                Logger.error('Error deleting document:', error);
                 Alert.alert('Error', 'Failed to delete document');
               }
             })();
@@ -246,7 +247,7 @@ const HomeScreen = ({ navigation }) => {
 
       if (selectedDocument.isMultiPage && selectedDocument.allPages) {
         // Multi-page document - rename all pages
-        console.log(`Renaming multi-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
+        Logger.debug('HomeScreen', `Renaming multi-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
         
         // Check if any file with new name pattern already exists
         const newPagePath = `${documentsDir}/${trimmedNewName}_page_1.jpg`;
@@ -261,7 +262,7 @@ const HomeScreen = ({ navigation }) => {
           const oldPagePath = page.path;
           const newPagePath = `${documentsDir}/${trimmedNewName}_page_${page.pageNumber}.jpg`;
           
-          console.log(`Renaming page: ${oldPagePath} -> ${newPagePath}`);
+          Logger.fileOp('rename', oldPagePath, '→', newPagePath);
           await RNFS.moveFile(oldPagePath, newPagePath);
         }
 
@@ -272,16 +273,16 @@ const HomeScreen = ({ navigation }) => {
           const metadataExists = await RNFS.exists(oldMetadataPath);
           if (metadataExists) {
             await RNFS.moveFile(oldMetadataPath, newMetadataPath);
-            console.log(`Renamed metadata: ${oldMetadataPath} -> ${newMetadataPath}`);
+            Logger.fileOp('rename', oldMetadataPath, '→', newMetadataPath);
           }
         } catch (metadataError) {
-          console.warn('Error renaming metadata file:', metadataError);
+          Logger.warn('Error renaming metadata file:', metadataError);
           // Don't fail the whole operation if metadata rename fails
         }
 
       } else {
         // Single page document - original logic
-        console.log(`Renaming single-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
+        Logger.debug('HomeScreen', `Renaming single-page document "${selectedDocument.name}" to "${trimmedNewName}"`);
         
         const fileExtension = selectedDocument.name.split('.').pop();
         const newFileName = `${trimmedNewName}.${fileExtension}`;
@@ -303,9 +304,9 @@ const HomeScreen = ({ navigation }) => {
       setNewName('');
       loadDocuments();
       
-      console.log(`Successfully renamed document to "${trimmedNewName}"`);
+      Logger.debug('HomeScreen', `Successfully renamed document to "${trimmedNewName}"`);
     } catch (error) {
-      console.error('Error renaming document:', error);
+      Logger.error('Error renaming document:', error);
       Alert.alert('Error', 'Failed to rename document');
     }
   };

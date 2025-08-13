@@ -14,6 +14,7 @@ import { createPdf } from 'react-native-images-to-pdf';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import Feather from 'react-native-vector-icons/Feather';
+import Logger from '../utils/logger';
 import {
   AnnotationText,
   IlluminatedButton,
@@ -94,7 +95,7 @@ const DocumentScreen = ({ route, navigation }) => {
           );
         }
       } catch (error) {
-        console.error('Error loading document pages:', error);
+        Logger.error('Error loading document pages:', error);
         // Fallback to single page
         setPages([{
           path: document.path,
@@ -144,7 +145,7 @@ const DocumentScreen = ({ route, navigation }) => {
           try {
             await RNFS.unlink(sharedPath);
           } catch (cleanupError) {
-            console.log('Failed to cleanup temp file:', cleanupError);
+            Logger.warn('Failed to cleanup temp file:', cleanupError);
           }
         }, 10000);
       } else {
@@ -162,7 +163,7 @@ const DocumentScreen = ({ route, navigation }) => {
       if (error?.message?.includes('User did not share')) {
         return;
       }
-      console.error('Error sharing JPG:', error);
+      Logger.error('Error sharing JPG:', error);
       Alert.alert('Error', 'Failed to share document. Please try again.');
     }
   };
@@ -176,7 +177,7 @@ const DocumentScreen = ({ route, navigation }) => {
         return;
       }
 
-      console.log(`Converting ${pages.length} page(s) to PDF`);
+      Logger.debug('DocumentScreen', `Converting ${pages.length} page(s) to PDF`);
 
       // Verify all pages exist
       for (const page of pages) {
@@ -191,7 +192,7 @@ const DocumentScreen = ({ route, navigation }) => {
       const pdfFileName = `${documentNameWithoutExt}.pdf`;
       const outputPath = `${RNFS.CachesDirectoryPath}/${pdfFileName}`;
 
-      console.log('Creating PDF with filename:', pdfFileName);
+      Logger.debug('DocumentScreen', 'Creating PDF with filename:', pdfFileName);
 
       // Configure PDF creation options with all pages
       const options = {
@@ -223,9 +224,9 @@ const DocumentScreen = ({ route, navigation }) => {
       setTimeout(async () => {
         try {
           await RNFS.unlink(pdfPath);
-          console.log('Temporary PDF file cleaned up');
+          Logger.debug('DocumentScreen', 'Temporary PDF file cleaned up');
         } catch (cleanupError) {
-          console.log('Failed to cleanup temp PDF:', cleanupError);
+          Logger.warn('Failed to cleanup temp PDF:', cleanupError);
         }
       }, 10000);
 
@@ -233,7 +234,7 @@ const DocumentScreen = ({ route, navigation }) => {
       if (error?.message?.includes('User did not share')) {
         return;
       }
-      console.error('Error creating PDF:', error);
+      Logger.error('Error creating PDF:', error);
       Alert.alert('Error', 'Failed to create or share PDF. Please try again.');
     }
   };
