@@ -22,5 +22,29 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Android signing credentials (contains sensitive passwords)
-Scriptoria/android/gradle.properties
+# Android signing credentials (contains sensitive passwords and keystore info)
+Scriptoria/android/keystore.properties
+Scriptoria/android/*.keystore
+Scriptoria/android/*.jks
+Scriptoria/android/app/*.keystore
+Scriptoria/android/app/*.jks
+Scriptoria/android/app/*-release-*.keystore
+!Scriptoria/android/app/debug.keystore
+
+# React Native & Android build files
+Scriptoria/android/app/build/
+Scriptoria/android/build/
+Scriptoria/android/.gradle/
+Scriptoria/android/local.properties
+
+# Android signing bundles
+Scriptoria/android/app/build/outputs/bundle/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Cache directories
+.gradle/
+Scriptoria/.gradle/
