@@ -48,3 +48,7 @@ Scriptoria/android/app/build/outputs/bundle/
 # Cache directories
 .gradle/
 Scriptoria/.gradle/
+
+# iOS directory - not maintained for this Android-only app
+Scriptoria/ios/
+!Scriptoria/ios/README.md

@@ -33,7 +33,7 @@ View our complete [Privacy Policy](./docs/privacy-policy.html)
   <img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width='200'/>
 </a>
 
-*Currently available on Google Play Store. iOS version coming soon.*
+*Available exclusively on Google Play Store for Android devices.*
 
 ## 🛠️ Development
 
@@ -49,27 +49,30 @@ This app is built with React Native and follows modern development practices.
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
-   git clone https://github.com/yourusername/scriptoria.git
+   git clone https://github.com/GerrieStrongbow/scriptoria.git
    cd scriptoria
    ```
 
 2. **Install dependencies**
+
    ```bash
    cd Scriptoria
    npm install
    ```
 
 3. **Android Setup**
+
    ```bash
    # Install Android dependencies
    cd android
    ./gradlew clean
    cd ..
-   
+
    # Start Metro bundler
    npm start
-   
+
    # Run on Android (in another terminal)
    npm run android
    ```
@@ -80,8 +83,7 @@ This app is built with React Native and follows modern development practices.
 scriptoria/
 ├── Scriptoria/          # React Native app source
 │   ├── src/            # TypeScript source code
-│   ├── android/        # Android-specific code
-│   └── ios/           # iOS-specific code (future)
+│   └── android/        # Android-specific code
 ├── publication/        # App store assets
 │   ├── icons/         # App icons and store graphics
 │   └── screenshots/   # App screenshots
@@ -91,7 +93,7 @@ scriptoria/
 
 ### Key Technologies
 
-- **React Native** - Cross-platform mobile development
+- **React Native** - Mobile development framework
 - **TypeScript** - Type-safe JavaScript
 - **React Native Document Scanner Plugin** - Camera-based document scanning
 - **React Native PDF** - PDF generation and viewing
