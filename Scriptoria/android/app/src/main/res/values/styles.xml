@@ -4,6 +4,16 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <!-- Status bar transparency for edge-to-edge displays -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <!-- Navigation bar transparency for edge-to-edge displays -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Ensure status bar content is dark -->
+        <item name="android:windowLightStatusBar">true</item>
+        <!-- Ensure navigation bar content is dark on Android 8.0+ -->
+        <item name="android:windowLightNavigationBar">true</item>
+        <!-- Handle display cutouts and notches -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
 </resources>

@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   BackHandler,
@@ -8,6 +8,7 @@ import {
   Modal,
   StatusBar,
   StyleSheet,
+  TextInput,
   View,
 } from 'react-native';
 import { createPdf } from 'react-native-images-to-pdf';
@@ -17,9 +18,11 @@ import Feather from 'react-native-vector-icons/Feather';
 import Logger from '../utils/logger';
 import {
   AnnotationText,
+  DropdownMenu,
   IlluminatedButton,
   ManuscriptContainer,
   ManuscriptHeading,
+  MenuButton,
   ParchmentButton,
   ScholarlyText,
   Scriptorium,
@@ -30,6 +33,10 @@ const DocumentScreen = ({ route, navigation }) => {
   const { document } = route.params;
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [pages, setPages] = useState([]);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [newName, setNewName] = useState('');
+  const renameInputRef = useRef(null);
 
   useEffect(() => {
     // Handle Android hardware back to go back instead of exiting
@@ -239,9 +246,168 @@ const DocumentScreen = ({ route, navigation }) => {
     }
   };
 
+  const deleteDocument = async () => {
+    const documentName = document.isMultiPage ? document.name : document.name.replace(/\.[^/.]+$/, '');
+    const pageText = document.isMultiPage ? ` (${document.pageCount} pages)` : '';
+    
+    Alert.alert(
+      'Delete Document',
+      `Are you sure you want to delete "${documentName}"${pageText}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (document.isMultiPage && document.allPages) {
+                // Delete all pages for multi-page document
+                for (const page of document.allPages) {
+                  try {
+                    await RNFS.unlink(page.path);
+                    Logger.fileOp('delete', page.path);
+                  } catch (error) {
+                    Logger.error(`Error deleting page ${page.path}:`, error);
+                  }
+                }
+                
+                // Delete metadata file if it exists
+                const metadataPath = `${RNFS.DocumentDirectoryPath}/scanned_documents/${document.name}.metadata.json`;
+                try {
+                  const metadataExists = await RNFS.exists(metadataPath);
+                  if (metadataExists) {
+                    await RNFS.unlink(metadataPath);
+                    Logger.fileOp('delete', metadataPath);
+                  }
+                } catch (error) {
+                  Logger.error(`Error deleting metadata:`, error);
+                }
+              } else {
+                // Delete single page document
+                await RNFS.unlink(document.path);
+                Logger.fileOp('delete', document.path);
+              }
+              
+              // Navigate back to home
+              navigation.goBack();
+            } catch (error) {
+              Logger.error('Error deleting document:', error);
+              Alert.alert('Error', 'Failed to delete document');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openDropdownMenu = () => {
+    setDropdownVisible(true);
+  };
+
+  const closeDropdownMenu = () => {
+    setDropdownVisible(false);
+  };
+
+  const openRenameModal = () => {
+    // Extract filename without extension
+    const nameWithoutExt = document.isMultiPage ? document.name : document.name.replace(/\.[^/.]+$/, '');
+    setNewName(nameWithoutExt);
+    setRenameModalVisible(true);
+    
+    // Focus and select text after modal animation
+    setTimeout(() => {
+      if (renameInputRef.current) {
+        renameInputRef.current.focus();
+        renameInputRef.current.setSelection(0, nameWithoutExt.length);
+      }
+    }, 300);
+  };
+
+  const renameDocument = async () => {
+    if (!newName.trim()) {
+      Alert.alert('Error', 'Please enter a valid name');
+      return;
+    }
+
+    try {
+      const trimmedNewName = newName.trim();
+      const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
+
+      if (document.isMultiPage && document.allPages) {
+        // Multi-page document - rename all pages
+        Logger.debug('DocumentScreen', `Renaming multi-page document "${document.name}" to "${trimmedNewName}"`);
+        
+        // Check if any file with new name pattern already exists
+        const newPagePath = `${documentsDir}/${trimmedNewName}_page_1.jpg`;
+        const exists = await RNFS.exists(newPagePath);
+        if (exists && !document.allPages.some(page => page.path === newPagePath)) {
+          Alert.alert('Error', 'A document with this name already exists');
+          return;
+        }
+
+        // Rename all pages
+        for (const page of document.allPages) {
+          const oldPagePath = page.path;
+          const newPagePath = `${documentsDir}/${trimmedNewName}_page_${page.pageNumber}.jpg`;
+          
+          Logger.fileOp('rename', oldPagePath, '→', newPagePath);
+          await RNFS.moveFile(oldPagePath, newPagePath);
+        }
+
+        // Rename metadata file if it exists
+        const oldMetadataPath = `${documentsDir}/${document.name}.metadata.json`;
+        const newMetadataPath = `${documentsDir}/${trimmedNewName}.metadata.json`;
+        try {
+          const metadataExists = await RNFS.exists(oldMetadataPath);
+          if (metadataExists) {
+            await RNFS.moveFile(oldMetadataPath, newMetadataPath);
+            Logger.fileOp('rename', oldMetadataPath, '→', newMetadataPath);
+          }
+        } catch (metadataError) {
+          Logger.warn('Error renaming metadata file:', metadataError);
+        }
+
+      } else {
+        // Single page document
+        Logger.debug('DocumentScreen', `Renaming single-page document "${document.name}" to "${trimmedNewName}"`);
+        
+        const fileExtension = document.name.split('.').pop();
+        const newFileName = `${trimmedNewName}.${fileExtension}`;
+        const newPath = `${documentsDir}/${newFileName}`;
+
+        // Check if file with new name already exists
+        const exists = await RNFS.exists(newPath);
+        if (exists && newPath !== document.path) {
+          Alert.alert('Error', 'A document with this name already exists');
+          return;
+        }
+
+        // Rename the file
+        await RNFS.moveFile(document.path, newPath);
+      }
+
+      setRenameModalVisible(false);
+      setNewName('');
+      
+      Logger.debug('DocumentScreen', `Successfully renamed document to "${trimmedNewName}"`);
+      
+      // Navigate back to home to refresh the list
+      navigation.goBack();
+      
+    } catch (error) {
+      Logger.error('Error renaming document:', error);
+      Alert.alert('Error', 'Failed to rename document');
+    }
+  };
+
   return (
     <Scriptorium>
-      <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+      <StatusBar 
+        backgroundColor="transparent" 
+        barStyle="dark-content" 
+        translucent={true}
+        animated={true}
+      />
       <ManuscriptContainer style={styles.docContainer}>
         {/* Header (no title) */}
         <View style={styles.header}>
@@ -252,12 +418,7 @@ const DocumentScreen = ({ route, navigation }) => {
             </View>
           </ParchmentButton>
           <View style={{ flex: 1 }} />
-          <ParchmentButton style={styles.shareButton} onPress={() => setShareModalVisible(true)} textStyle={{ fontFamily: scriptoriaTheme.typography.fonts.sans }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Feather name="share-2" size={18} color={scriptoriaTheme.colors.deepUmber} style={{ marginRight: 6 }} />
-              <ScholarlyText>Share</ScholarlyText>
-            </View>
-          </ParchmentButton>
+          <MenuButton onPress={openDropdownMenu} />
         </View>
 
         {/* Document Viewer */}
@@ -337,6 +498,72 @@ const DocumentScreen = ({ route, navigation }) => {
             </View>
           </View>
         </Modal>
+
+        {/* Rename Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={renameModalVisible}
+          onRequestClose={() => setRenameModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ManuscriptHeading style={styles.modalTitle}>Rename Manuscript</ManuscriptHeading>
+
+              <TextInput
+                ref={renameInputRef}
+                style={styles.input}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Enter manuscript title..."
+                placeholderTextColor={scriptoriaTheme.colors.text.tertiary}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={renameDocument}
+              />
+
+              <View style={styles.modalButtonsColumn}>
+                <IlluminatedButton onPress={renameDocument} style={styles.fullWidthButton} textStyle={{ fontSize: scriptoriaTheme.typography.sizes.sm }}>
+                  Rename
+                </IlluminatedButton>
+                <ParchmentButton
+                  style={[styles.fullWidthButton, { marginTop: scriptoriaTheme.spacing.sm }]}
+                  textStyle={{ fontSize: scriptoriaTheme.typography.sizes.sm }}
+                  onPress={() => {
+                    setRenameModalVisible(false);
+                    setNewName('');
+                  }}
+                >
+                  Cancel
+                </ParchmentButton>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Dropdown Menu */}
+        <DropdownMenu
+          visible={dropdownVisible}
+          onClose={closeDropdownMenu}
+          options={[
+            {
+              label: 'Share',
+              icon: 'share-2',
+              onPress: () => setShareModalVisible(true)
+            },
+            {
+              label: 'Rename',
+              icon: 'feather',
+              onPress: openRenameModal
+            },
+            {
+              label: 'Delete',
+              icon: 'trash-2',
+              destructive: true,
+              onPress: deleteDocument
+            }
+          ]}
+        />
 
       </ManuscriptContainer>
     </Scriptorium>
@@ -488,6 +715,29 @@ const styles = StyleSheet.create({
 
   cancelModalButton: {
     borderRadius: scriptoriaTheme.borderRadius.base,
+  },
+
+  // Rename Modal styles
+  input: {
+    borderWidth: 1,
+    borderColor: scriptoriaTheme.colors.border,
+    borderRadius: scriptoriaTheme.borderRadius.base,
+    padding: scriptoriaTheme.spacing.base,
+    fontSize: scriptoriaTheme.typography.sizes.sm,
+    fontFamily: scriptoriaTheme.typography.fonts.serif,
+    color: scriptoriaTheme.colors.text.primary,
+    marginBottom: scriptoriaTheme.spacing.lg,
+    backgroundColor: scriptoriaTheme.colors.surface,
+    lineHeight: scriptoriaTheme.typography.lineHeights.normal * scriptoriaTheme.typography.sizes.base,
+    letterSpacing: 0.1,
+  },
+
+  modalButtonsColumn: {
+    marginTop: scriptoriaTheme.spacing.sm,
+  },
+
+  fullWidthButton: {
+    width: '100%',
   },
 });
 

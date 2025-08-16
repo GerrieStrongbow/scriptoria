@@ -1,6 +1,8 @@
 package com.scriptoria.app
 
 import android.app.Application
+import android.content.res.Configuration
+import android.content.res.Resources
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -34,5 +36,24 @@ class MainApplication : Application(), ReactApplication {
   override fun onCreate() {
     super.onCreate()
     loadReactNative(this)
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    // Force font scale to 1.0 application-wide
+    newConfig.fontScale = 1.0f
+  }
+
+  override fun getResources(): Resources {
+    val resources = super.getResources()
+    val configuration = resources.configuration
+    
+    // Force font scale to 1.0 to prevent system scaling from affecting UI
+    if (configuration.fontScale != 1.0f) {
+      configuration.fontScale = 1.0f
+      resources.updateConfiguration(configuration, resources.displayMetrics)
+    }
+    
+    return resources
   }
 }

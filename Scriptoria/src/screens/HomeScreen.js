@@ -9,16 +9,19 @@ import {
   TextInput,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
+import { createPdf } from 'react-native-images-to-pdf';
 import Logger from '../utils/logger';
 import {
   AnnotationText,
-  DeleteAction,
   DocumentRow,
-  EditAction,
+  DropdownMenu,
   IlluminatedButton,
   ManuscriptContainer,
   ManuscriptHeading,
+  MenuButton,
   ParchmentButton,
   QuillButton,
   ScholarlyInput,
@@ -29,13 +32,21 @@ import {
 } from '../components/ScriptoriaComponents';
 
 const HomeScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [documents, setDocuments] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [newName, setNewName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [dropdownDocument, setDropdownDocument] = useState(null);
   const renameInputRef = useRef(null);
+  
+  // Debug log the insets
+  useEffect(() => {
+    Logger.debug('HomeScreen', `Safe area insets - top: ${insets.top}, bottom: ${insets.bottom}, left: ${insets.left}, right: ${insets.right}`);
+  }, [insets]);
 
   const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
 
@@ -215,6 +226,16 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  const openDropdownMenu = (document) => {
+    setDropdownDocument(document);
+    setDropdownVisible(true);
+  };
+
+  const closeDropdownMenu = () => {
+    setDropdownVisible(false);
+    setDropdownDocument(null);
+  };
+
   const openRenameModal = (document) => {
     setSelectedDocument(document);
     // Extract filename without extension
@@ -229,6 +250,81 @@ const HomeScreen = ({ navigation }) => {
         renameInputRef.current.setSelection(0, nameWithoutExt.length);
       }
     }, 300);
+  };
+
+  const shareDocument = async (document) => {
+    try {
+      Logger.debug('HomeScreen', 'Sharing document:', document.name);
+
+      if (document.isMultiPage && document.allPages) {
+        // Multi-page document - create PDF
+        const documentNameWithoutExt = document.name;
+        const pdfFileName = `${documentNameWithoutExt}.pdf`;
+        const outputPath = `${RNFS.CachesDirectoryPath}/${pdfFileName}`;
+
+        const options = {
+          pages: document.allPages.map(page => ({
+            imagePath: page.path,
+          })),
+          outputPath: outputPath,
+        };
+
+        const pdfPath = await createPdf(options);
+        const shareOptions = {
+          title: `Scanned Document PDF (${document.pageCount} pages)`,
+          message: 'Scanned document from Scriptoria',
+          url: `file://${pdfPath}`,
+          type: 'application/pdf',
+        };
+        await Share.open(shareOptions);
+
+        // Cleanup
+        setTimeout(async () => {
+          try {
+            await RNFS.unlink(pdfPath);
+          } catch (cleanupError) {
+            Logger.warn('Failed to cleanup temp PDF:', cleanupError);
+          }
+        }, 10000);
+      } else {
+        // Single page document - share as JPG
+        const fileExists = await RNFS.exists(document.path);
+        if (!fileExists) {
+          Alert.alert('Error', 'Document file not found');
+          return;
+        }
+
+        const timestamp = Date.now();
+        const documentNameWithoutExt = document.name.replace(/\.[^/.]+$/, '');
+        const sharedFileName = `${documentNameWithoutExt}_${timestamp}.jpg`;
+        const sharedPath = `${RNFS.CachesDirectoryPath}/${sharedFileName}`;
+
+        await RNFS.copyFile(document.path, sharedPath);
+
+        const shareOptions = {
+          title: 'Scanned Document',
+          message: 'Scanned document from Scriptoria',
+          url: `file://${sharedPath}`,
+          type: 'image/jpeg',
+        };
+        await Share.open(shareOptions);
+
+        // Cleanup
+        setTimeout(async () => {
+          try {
+            await RNFS.unlink(sharedPath);
+          } catch (cleanupError) {
+            Logger.warn('Failed to cleanup temp file:', cleanupError);
+          }
+        }, 10000);
+      }
+    } catch (error) {
+      if (error?.message?.includes('User did not share')) {
+        return;
+      }
+      Logger.error('Error sharing document:', error);
+      Alert.alert('Error', 'Failed to share document. Please try again.');
+    }
   };
 
   const renameDocument = async () => {
@@ -316,42 +412,55 @@ const HomeScreen = ({ navigation }) => {
     document.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderDocument = ({ item }) => (
-    <DocumentRow onPress={() => navigation.navigate('Document', { document: item })}>
-      <View style={styles.documentContent}>
-        <View style={styles.documentIcon} />
-        <View style={styles.documentInfo}>
-          <ScholarlyText manuscript style={styles.documentName}>
-            {item.isMultiPage ? item.name : item.name.replace(/\.[^/.]+$/, '')}
-            {item.isMultiPage && (
-              <AnnotationText> ({item.pageCount} pages)</AnnotationText>
-            )}
-          </ScholarlyText>
-          <AnnotationText>
-            Saved on {new Date(item.mtime).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </AnnotationText>
-        </View>
-        <View style={styles.documentActions}>
-          <EditAction
+  const renderDocument = ({ item }) => {
+    const dropdownOptions = [
+      {
+        label: 'Share',
+        icon: 'share-2',
+        onPress: () => shareDocument(item)
+      },
+      {
+        label: 'Rename',
+        icon: 'feather',
+        onPress: () => openRenameModal(item)
+      },
+      {
+        label: 'Delete',
+        icon: 'trash-2',
+        destructive: true,
+        onPress: () => deleteDocument(item)
+      }
+    ];
+
+    return (
+      <DocumentRow onPress={() => navigation.navigate('Document', { document: item })}>
+        <View style={styles.documentContent}>
+          <View style={styles.documentIcon} />
+          <View style={styles.documentInfo}>
+            <ScholarlyText manuscript style={styles.documentName}>
+              {item.isMultiPage ? item.name : item.name.replace(/\.[^/.]+$/, '')}
+              {item.isMultiPage && (
+                <AnnotationText> ({item.pageCount} pages)</AnnotationText>
+              )}
+            </ScholarlyText>
+            <AnnotationText>
+              Saved on {new Date(item.mtime).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </AnnotationText>
+          </View>
+          <MenuButton
             onPress={(e) => {
               e.stopPropagation();
-              openRenameModal(item);
-            }}
-          />
-          <DeleteAction
-            onPress={(e) => {
-              e.stopPropagation();
-              deleteDocument(item);
+              openDropdownMenu(item);
             }}
           />
         </View>
-      </View>
-    </DocumentRow>
-  );
+      </DocumentRow>
+    );
+  };
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -365,7 +474,12 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <Scriptorium>
-      <StatusBar backgroundColor={scriptoriaTheme.colors.background} barStyle="dark-content" />
+      <StatusBar 
+        backgroundColor="transparent" 
+        barStyle="dark-content" 
+        translucent={true}
+        animated={true}
+      />
       <ManuscriptContainer>
         {/* Header */}
         <View style={styles.header}>
@@ -396,7 +510,14 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         {/* Floating Action Button */}
-        <QuillButton onPress={() => navigation.navigate('Scan')} />
+        <QuillButton 
+          onPress={() => navigation.navigate('Scan')} 
+          style={{ 
+            position: 'absolute', 
+            right: 16, 
+            bottom: Math.max(24, insets.bottom + 24)
+          }} 
+        />
 
         {/* Rename Modal */}
         <Modal
@@ -440,6 +561,32 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
         </Modal>
+
+        {/* Dropdown Menu */}
+        {dropdownDocument && (
+          <DropdownMenu
+            visible={dropdownVisible}
+            onClose={closeDropdownMenu}
+            options={[
+              {
+                label: 'Share',
+                icon: 'share-2',
+                onPress: () => shareDocument(dropdownDocument)
+              },
+              {
+                label: 'Rename',
+                icon: 'feather',
+                onPress: () => openRenameModal(dropdownDocument)
+              },
+              {
+                label: 'Delete',
+                icon: 'trash-2',
+                destructive: true,
+                onPress: () => deleteDocument(dropdownDocument)
+              }
+            ]}
+          />
+        )}
       </ManuscriptContainer>
     </Scriptorium>
   );
@@ -467,7 +614,7 @@ const styles = StyleSheet.create({
   },
 
   documentsList: {
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 80, // Space for FAB, will be adjusted with safe area
   },
 
   sectionHeading: {
