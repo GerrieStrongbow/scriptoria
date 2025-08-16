@@ -4,6 +4,8 @@
 
 The icon features a medieval manuscript page with a quill feather, perfectly representing Scriptoria's document scanning with manuscript aesthetics.
 
+**IMPORTANT:** Follow Google's adaptive icon guidelines - create square icons without rounded corners. Android will automatically apply rounding, shadows, and visual effects through the adaptive icon system.
+
 ## Color Palette (from Scriptoria theme)
 - **Background**: #F8F1E7 (Parchment Beige)
 - **Gold Accent**: #C6A664 (Burnished Gold) 
@@ -25,18 +27,21 @@ All files should be named `ic_launcher.png`
 ## Design Elements
 
 ### 1. Base Shape
-- Rounded rectangle with corner radius of 25% of size
+- **Square format** (1:1 aspect ratio) - NO rounded corners
 - Warm parchment background (#F8F1E7)
+- Keep important content within center 66% (safe zone for adaptive cropping)
 
 ### 2. Central Element
 - Elegant quill feather in burnished gold (#C6A664)
-- Positioned diagonally from bottom-left to top-right
+- Positioned diagonally from bottom-left to top-right (within safe zone)
 - Feather shaft in deep umber (#4B3621)
+- Ensure feather remains recognizable when cropped to circle or rounded square
 
 ### 3. Manuscript Details
-- Subtle border in parchment border color (#D8CBB9)
-- Small decorative dots in corners (gold)
-- Faint horizontal lines suggesting text/documents
+- **Avoid border elements** near edges (will be cropped by adaptive system)
+- Small decorative dots within safe zone (gold)
+- Faint horizontal lines suggesting text/documents (keep centered)
+- Design should work well in circle, rounded square, and other adaptive shapes
 
 ## Quick Creation Options
 
@@ -63,10 +68,10 @@ All files should be named `ic_launcher.png`
 If the quill is too complex, here's a simpler approach:
 
 ### Minimalist Document Icon
-- Parchment background with rounded corners
+- **Square parchment background** (no rounded corners)
 - Simple document outline in center (white/cream)
-- Small gold accent (corner or border)
-- Clean, recognizable at small sizes
+- Small gold accent within safe zone (avoid corners/borders)
+- Clean, recognizable at small sizes and adaptive shapes
 
 ### Elements:
 - Background: #F8F1E7
@@ -79,8 +84,10 @@ If the quill is too complex, here's a simpler approach:
 Before submitting:
 1. View icons at actual size on device
 2. Test readability at 48x48 (smallest size)
-3. Ensure consistency across all sizes
-4. Verify colors match app theme
+3. Ensure consistency across all density sizes
+4. **Test adaptive icon behavior:** preview how icon looks when cropped to circles, rounded rectangles
+5. Verify colors match app theme
+6. Check that important elements remain visible in center 66% safe zone
 
 ## Installation
 

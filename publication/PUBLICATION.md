@@ -10,7 +10,7 @@ Before starting, ensure you have:
 - [x] Google Play Console Developer Account ($25 one-time fee)
 - [x] App signing key and keystore file
 - [x] App icons in all required sizes
-- [ ] Screenshots for store listing
+- [x] Screenshots for store listing
 - [ ] App description and metadata
 - [ ] Privacy Policy (required for apps that handle user data)
 
@@ -81,13 +81,23 @@ The AAB file will be at: `android/app/build/outputs/bundle/release/app-release.a
 
 ### 3.1 App Icons
 
-Create app icons in these sizes (place in `android/app/src/main/res/`):
+Create app icons following Google's adaptive icon guidelines:
 
-- `mipmap-hdpi/ic_launcher.png` (72x72)
+**Important:** Use square icons without rounded corners - Android will automatically apply rounding and visual effects through the adaptive icon system.
+
+**Required sizes** (place in `android/app/src/main/res/`):
 - `mipmap-mdpi/ic_launcher.png` (48x48)
+- `mipmap-hdpi/ic_launcher.png` (72x72)
 - `mipmap-xhdpi/ic_launcher.png` (96x96)
 - `mipmap-xxhdpi/ic_launcher.png` (144x144)
 - `mipmap-xxxhdpi/ic_launcher.png` (192x192)
+
+**Design Guidelines:**
+- Use square format (1:1 aspect ratio)
+- Keep important content within the safe zone (center 66% of icon)
+- Avoid pre-rounded corners - let Android handle adaptive masking
+- Design should work well when cropped to circles, rounded rectangles, or other shapes
+- Use consistent visual style across all density sizes
 
 ### 3.2 Feature Graphic
 
@@ -109,44 +119,57 @@ Take screenshots of your app running on different devices:
 ### 4.1 Basic Information
 
 - **App Name:** Scriptoria
-- **Short Description:** (80 characters) "Professional document scanning with medieval manuscript aesthetics"
+- **Short Description:** (80 characters) "Free, ad-free document scanner with elegant design and easy-to-use interface"
 - **Full Description:** (4000 characters max)
 
 ```
-Transform your documents into beautifully preserved digital manuscripts with Scriptoria.
+Scriptoria - Free Professional Document Scanner
+
+Transform your physical documents into high-quality digital files with Scriptoria, a completely free and ad-free document scanning app designed for simplicity and elegance.
 
 KEY FEATURES:
-📜 Professional Document Scanning
-• High-quality document capture with automatic edge detection
-• Intelligent cropping and enhancement
-• Support for multiple document types
+📱 Smart Document Scanning
+• Advanced automatic edge detection and cropping
+• High-quality image enhancement and optimization  
+• Support for all document types - receipts, contracts, notes, books
+• Instant PDF generation
 
-🎨 Medieval Manuscript Aesthetics
-• Elegant parchment-inspired interface
-• Sophisticated serif typography
-• Warm, scholarly color palette
-
-📚 Organized Digital Library
-• Intuitive manuscript organization
-• Smart search functionality
-• Easy renaming and management
-• Chronological document sorting
-
-✨ Refined User Experience
-• Minimalist, distraction-free design
+✨ Simple & Elegant Design
+• Clean, intuitive interface that's easy to use
+• Distraction-free scanning experience
 • Smooth, responsive navigation
-• Professional-grade scanning results
+• Inspired by classic document aesthetics
 
-Perfect for students, researchers, professionals, and anyone who values both functionality and beautiful design. Scriptoria combines cutting-edge scanning technology with the timeless elegance of medieval manuscripts.
+📚 Organized Document Library
+• Effortless document organization and management
+• Quick search and easy renaming
+• Chronological sorting for easy access
+• Local storage - your documents stay private
 
-Download now and transform your document workflow into an art form.
+🆓 Completely Free
+• No ads, no subscriptions, no hidden costs
+• No data collection or cloud storage requirements
+• All processing happens locally on your device
+• Privacy-focused design
+
+Perfect for students organizing study materials, professionals digitizing business documents, researchers archiving papers, or anyone who values clean design and reliable functionality.
+
+Why choose Scriptoria?
+• 100% free with no advertisements
+• Simple, professional interface
+• High-quality scanning results
+• Complete privacy - documents never leave your device
+• Fast, reliable performance
+• No account registration required
+
+Download Scriptoria today and experience document scanning that combines powerful functionality with elegant simplicity.
 ```
 
 ### 4.2 Categorization
 
 - **Category:** Productivity
 - **Content Rating:** Everyone
-- **Tags:** document scanner, productivity, manuscripts, PDF, scanning
+- **Tags:** camera, productivity, business
 
 ### 4.3 Contact Details
 
@@ -199,16 +222,17 @@ For questions about this privacy policy, contact: [your-email]
 4. Fill in release notes:
 
 ```
-Initial release of Scriptoria - Professional document scanning with medieval manuscript aesthetics.
+Initial release of Scriptoria - Your personal document scanner and organizer.
 
 Features:
-• High-quality document scanning with automatic enhancement
-• Beautiful parchment-inspired interface design
-• Organized digital manuscript library
-• Smart search and organization tools
-• Elegant serif typography and warm color palette
+• Scan documents using your camera
+• Automatic edge detection and perspective correction
+• Convert scanned images to PDF
+• Organize documents with custom names
+• Share documents easily
+• Clean, intuitive interface
 
-Transform your document workflow into an art form with Scriptoria.
+This first release provides core document scanning and management functionality.
 ```
 
 ### 6.3 Complete Store Listing

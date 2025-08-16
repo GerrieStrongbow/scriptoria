@@ -1,4 +1,4 @@
-package com.docusnap.app
+package com.scriptoria.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
