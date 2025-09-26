@@ -47,3 +47,9 @@
 - Perform refactors incrementally and land automated tests alongside each change.
 - Keep a sample dataset of single- and multi-page documents to manually validate critical flows after each step.
 - Coordinate with design/product before removing legacy components or altering UX-heavy flows.
+
+## Upcoming Android compliance tasks
+
+- **Edge-to-edge readiness (Android 15)**: Medium importance—Android 15 defaults to edge-to-edge, so update window inset handling to avoid clipped layouts. Estimate 1–2 days if screens already respect `WindowInsets`; risk is low–medium UI regressions, so plan preview testing.
+- **Large-screen resizability/orientation (Android 16)**: Medium–high importance—Android 16 will ignore restrictive manifest flags, which can expose layout bugs on tablets, foldables, and multi-window. Effort ranges from a quick manifest audit to multi-week responsive design work; risk is medium without thorough large-screen QA.
+- **16 KB native library alignment (Android 16)**: High importance if shipping `.so` files—misaligned libs will fail to load on 16 KB page-size devices. Rebuild with a modern NDK/Gradle toolchain (includes 16 KB alignment) and verify third-party binaries; effort is usually low unless waiting on vendor updates, with medium risk until everything is rebuilt.
