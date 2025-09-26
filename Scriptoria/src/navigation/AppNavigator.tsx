@@ -1,39 +1,36 @@
-import React from 'react';
+import React, { type ReactElement } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../screens/HomeScreen';
 import ScanScreen from '../screens/ScanScreen';
 import DocumentScreen from '../screens/DocumentScreen';
+import type { AppStackParamList } from './types';
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<AppStackParamList>();
 
-function AppNavigator() {
+export default function AppNavigator(): ReactElement {
   return (
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
-          headerStyle: {
-            backgroundColor: '#2196F3',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerShown: false,
+          presentation: 'card',
+          animationEnabled: true,
         }}
       >
-        <Stack.Screen 
-          name="Home" 
+        <Stack.Screen
+          name="Home"
           component={HomeScreen}
           options={{ title: 'My Documents' }}
         />
-        <Stack.Screen 
-          name="Scan" 
+        <Stack.Screen
+          name="Scan"
           component={ScanScreen}
           options={{ title: 'Scan Document' }}
         />
-        <Stack.Screen 
-          name="Document" 
+        <Stack.Screen
+          name="Document"
           component={DocumentScreen}
           options={{ title: 'View Document' }}
         />
@@ -41,5 +38,3 @@ function AppNavigator() {
     </NavigationContainer>
   );
 }
-
-export default AppNavigator;

@@ -6,6 +6,7 @@ const theme = {
   colors: {
     // Primary warm oranges
     primary: '#D97706',        // Rich amber - main brand color
+    accent: '#D97706',
     primaryLight: '#F59E0B',   // Lighter amber for highlights
     primaryDark: '#92400E',    // Deep amber for depth
     
@@ -65,12 +66,12 @@ const theme = {
     },
     
     weights: {
-      light: 300,
-      normal: 400,
-      medium: 500,
-      semibold: 600,
-      bold: 700,
-    },
+      light: '300',
+      normal: '400',
+      medium: '500',
+      semibold: '600',
+      bold: '700',
+    } as const,
     
     lineHeights: {
       tight: 1.2,
@@ -150,3 +151,4 @@ const theme = {
 };
 
 export default theme;
+export type WarmTheme = typeof theme;

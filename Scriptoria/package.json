@@ -6,21 +6,25 @@
     "android": "react-native run-android",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.80.2",
     "base64-arraybuffer": "^1.0.2",
     "promise": "^8.3.0",
-    "prop-types": "^15.8.1",
     "react": "19.1.0",
     "react-native": "0.80.2",
+    "@react-navigation/native": "^6.1.16",
+    "@react-navigation/stack": "^6.4.1",
     "react-native-document-scanner-plugin": "^1.0.1",
     "react-native-fs": "^2.20.0",
+    "react-native-gesture-handler": "^2.16.2",
     "react-native-images-to-pdf": "^0.2.1",
-    "react-native-pdf": "^6.7.7",
     "react-native-safe-area-context": "^5.6.0",
     "react-native-share": "^12.1.2",
+    "react-native-reanimated": "^3.15.0",
+    "react-native-screens": "^4.6.1",
     "react-native-svg": "^15.12.1",
     "react-native-vector-icons": "^10.3.0"
   },

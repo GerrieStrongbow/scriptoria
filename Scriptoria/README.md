@@ -63,6 +63,22 @@ npx react-native start
 npx react-native run-android --deviceId emulator-5554
 ```
 
+### Type Checking
+
+- Run a full TypeScript check any time with:
+
+```bash
+npm run typecheck
+```
+
+- Install an optional git hook to block commits when typechecks fail:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+  Remove it later by deleting `.git/hooks/pre-commit` if you change your mind.
+
 3. **Run on Physical Device**:
 
 ```bash
@@ -122,17 +138,16 @@ xattr -d com.apple.quarantine /Applications/Flipper.app
 Scriptoria/
 ├── src/
 │   ├── screens/
-│   │   ├── HomeScreen.js      # Document list
-│   │   ├── ScanScreen.js      # Camera scanning
-│   │   └── DocumentScreen.js  # Document viewer
+│   │   ├── HomeScreen.tsx      # Document list
+│   │   ├── ScanScreen.tsx      # Camera scanning
+│   │   └── DocumentScreen.tsx  # Document viewer
 │   ├── components/
-│   │   ├── ScriptoriaComponents.js
-│   │   └── StyledComponents.js
+│   │   └── ScriptoriaComponents.tsx
 │   ├── navigation/
-│   │   └── AppNavigator.js    # Navigation setup
+│   │   └── AppNavigator.tsx    # Navigation setup
 │   ├── styles/
-│   │   ├── scriptoriaTheme.js # Scriptoria design theme
-│   │   └── theme.js
+│   │   ├── scriptoriaTheme.ts # Scriptoria design theme
+│   │   └── theme.ts
 │   ├── services/              # Business logic
 │   └── utils/                 # Helper functions
 ├── assets/
@@ -151,7 +166,7 @@ Scriptoria/
 
 - **Framework**: React Native 0.80.2 (Legacy Architecture)
 - **Document Scanning**: react-native-document-scanner-plugin
-- **PDF Generation**: react-native-pdf
+- **PDF Generation**: react-native-images-to-pdf
 - **File System**: react-native-fs
 - **Sharing**: react-native-share
 

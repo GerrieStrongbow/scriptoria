@@ -1,5 +1,4 @@
-import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,9 +7,25 @@ import {
   View,
 } from 'react-native';
 import DocumentScanner from 'react-native-document-scanner-plugin';
-import RNFS from 'react-native-fs';
 import Feather from 'react-native-vector-icons/Feather';
 import Logger from '../utils/logger';
+import RNFS from 'react-native-fs';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import {
+  ensureDocumentsDirectory,
+  generateUniqueDocumentName,
+  getPageFilePath,
+  getSinglePageFilePath,
+  writeMetadataFile,
+} from '../services/documentService';
+import type { AppStackParamList } from '../navigation/types';
+import { showError, showInfo } from '../utils/feedback';
+
+type ScanScreenNavigationProp = StackNavigationProp<AppStackParamList, 'Scan'>;
+
+type ScanScreenProps = {
+  navigation: ScanScreenNavigationProp;
+};
 import {
   AnnotationText,
   ManuscriptContainer,
@@ -20,33 +35,33 @@ import {
   scriptoriaTheme,
 } from '../components/ScriptoriaComponents';
 
-const ScanScreen = ({ navigation }) => {
+const ScanScreen: React.FC<ScanScreenProps> = ({ navigation }) => {
   const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [scannedPages, setScannedPages] = useState([]);
-
-  const documentsDir = `${RNFS.DocumentDirectoryPath}/scanned_documents`;
+  const [scannedPages, setScannedPages] = useState<string[]>([]);
 
   const startScan = () => {
     setScanning(true);
-    DocumentScanner.scanDocument({
+    const scanOptions = {
       letUserAdjustCrop: true,
       maxNumDocuments: 20,
       responseType: 'imageFilePath',
-    })
-      .then((response) => {
+    } as const;
+
+    DocumentScanner.scanDocument(scanOptions as unknown as Parameters<typeof DocumentScanner.scanDocument>[0])
+      .then((response: { scannedImages?: string[] }) => {
         if (response.scannedImages && response.scannedImages.length > 0) {
           Logger.debug('ScanScreen', 'Scanned images received:', response.scannedImages.length, 'pages');
           setScannedPages(response.scannedImages);
         } else {
           Logger.debug('ScanScreen', 'No scanned images in response');
-          Alert.alert('No pages scanned', 'Please try again');
+          showInfo('Please try again', { title: 'No pages scanned' });
           navigation.goBack();
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         Logger.error('Scan error:', error);
-        Alert.alert('Scan Error', 'Failed to scan document');
+        showError('Failed to scan document', { title: 'Scan Error' });
         navigation.goBack();
       })
       .finally(() => {
@@ -54,89 +69,63 @@ const ScanScreen = ({ navigation }) => {
       });
   };
 
-  const saveDocument = async () => {
+  const saveDocument = async (): Promise<void> => {
     try {
       setProcessing(true);
 
-      // Ensure documents directory exists
-      const dirExists = await RNFS.exists(documentsDir);
-      if (!dirExists) {
-        Logger.fileOp('create', documentsDir);
-        await RNFS.mkdir(documentsDir);
-      }
+      await ensureDocumentsDirectory();
 
       // Generate unique "Untitled Manuscript" base name
       const baseFileName = 'Untitled Manuscript';
-      let baseDocumentName = baseFileName;
-      let counter = 1;
-
-      // Check if base name exists and increment counter if needed
-      const checkExists = async (baseName) => {
-        if (scannedPages.length === 1) {
-          return await RNFS.exists(`${documentsDir}/${baseName}.jpg`);
-        } else {
-          return await RNFS.exists(`${documentsDir}/${baseName}_page_1.jpg`);
-        }
-      };
-
-      while (await checkExists(baseDocumentName)) {
-        baseDocumentName = `${baseFileName} (${counter})`;
-        counter++;
-      }
+      const isMultiPage = scannedPages.length > 1;
+      const primaryExtension = scannedPages[0]?.split('.').pop()?.toLowerCase() || 'jpg';
+      const baseDocumentName = await generateUniqueDocumentName(baseFileName, {
+        isMultiPage,
+        extension: primaryExtension,
+      });
 
       Logger.debug('ScanScreen', `Saving ${scannedPages.length} pages for document: ${baseDocumentName}`);
 
-      // Save all scanned pages
-      const savedPages = [];
+      const savedPages: { path: string; pageNumber: number; extension: string }[] = [];
       for (let i = 0; i < scannedPages.length; i++) {
         const sourcePath = scannedPages[i];
-        
-        // Generate filename based on page count
-        let fileName;
-        if (scannedPages.length === 1) {
-          fileName = `${baseDocumentName}.jpg`;
-        } else {
-          fileName = `${baseDocumentName}_page_${i + 1}.jpg`;
-        }
-        
-        const destPath = `${documentsDir}/${fileName}`;
 
-        // Check if source file exists before copying
         const sourceExists = await RNFS.exists(sourcePath);
         if (!sourceExists) {
           throw new Error(`Source file not found: ${sourcePath}`);
         }
 
-        Logger.fileOp('copy', sourcePath, '→', destPath);
-        
-        // Copy the scanned image to documents directory
-        await RNFS.copyFile(sourcePath, destPath);
-        
-        // Verify the destination file was created
-        const destExists = await RNFS.exists(destPath);
+        const extension = sourcePath.split('.').pop()?.toLowerCase() || 'jpg';
+        const destinationPath = isMultiPage
+          ? getPageFilePath(baseDocumentName, i + 1, extension)
+          : getSinglePageFilePath(baseDocumentName, extension);
+
+        Logger.fileOp('copy', sourcePath, '→', destinationPath);
+        await RNFS.copyFile(sourcePath, destinationPath);
+
+        const destExists = await RNFS.exists(destinationPath);
         if (!destExists) {
-          throw new Error(`Failed to create destination file: ${destPath}`);
+          throw new Error(`Failed to create destination file: ${destinationPath}`);
         }
 
-        savedPages.push(destPath);
+        savedPages.push({ path: destinationPath, pageNumber: i + 1, extension });
       }
 
-      // If it's a multi-page document, create a metadata file to track pages
-      if (scannedPages.length > 1) {
-        const metadataPath = `${documentsDir}/${baseDocumentName}.metadata.json`;
-        const metadata = {
+      if (isMultiPage) {
+        await writeMetadataFile(baseDocumentName, {
           documentName: baseDocumentName,
-          pageCount: scannedPages.length,
-          pages: savedPages.map((path, index) => ({
-            pageNumber: index + 1,
-            filePath: path,
-            fileName: `${baseDocumentName}_page_${index + 1}.jpg`
-          })),
-          createdAt: new Date().toISOString()
-        };
-        
-        await RNFS.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf8');
-        Logger.fileOp('create', metadataPath);
+          pageCount: savedPages.length,
+          pages: savedPages.map(({ path, pageNumber, extension }) => {
+            const nameFromPath = path.split('/').pop();
+            const fileName = nameFromPath ?? `${baseDocumentName}_page_${pageNumber}.${extension}`;
+            return {
+              pageNumber,
+              filePath: path,
+              fileName,
+            };
+          }),
+          createdAt: new Date().toISOString(),
+        });
       }
 
       // Clean up temp files (only if they still exist)
@@ -154,34 +143,34 @@ const ScanScreen = ({ navigation }) => {
         }
       }
 
-      Alert.alert(
-        'Document saved',
+      showInfo(
         `${scannedPages.length} page${scannedPages.length > 1 ? 's' : ''} saved to your library`,
-        [
-          {
-            text: 'Return to Library',
-            onPress: () => navigation.navigate('Home'),
-          },
-        ]
+        {
+          title: 'Document saved',
+          buttons: [
+            {
+              text: 'Return to Library',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ],
+        },
       );
     } catch (error) {
       Logger.error('Save error:', error);
-      Alert.alert('Error', 'Failed to save document');
+      showError('Failed to save document');
     } finally {
       setProcessing(false);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     startScan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (scannedPages.length > 0 && !scanning) {
       saveDocument();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scannedPages, scanning]);
 
   if (scanning) {
@@ -333,12 +322,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 });
-
-ScanScreen.propTypes = {
-  navigation: PropTypes.shape({
-    goBack: PropTypes.func.isRequired,
-    navigate: PropTypes.func.isRequired,
-  }).isRequired,
-};
 
 export default ScanScreen;

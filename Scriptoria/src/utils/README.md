@@ -13,8 +13,8 @@ The Logger utility provides conditional logging that automatically disables debu
 
 ## Usage
 
-```javascript
-import Logger from '../utils/logger';
+```ts
+import Logger from './logger';
 
 // Basic logging
 Logger.log('Application started');                    // Dev only

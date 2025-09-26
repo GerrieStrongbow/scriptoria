@@ -2,11 +2,42 @@
 // Warm, scholarly, minimalist — parchment, ink, and gold accents
 import { Platform } from 'react-native';
 
+const serifDisplay = Platform.select<string>({
+  ios: 'PlayfairDisplay-Regular',
+  android: 'PlayfairDisplay-Regular',
+  default: 'PlayfairDisplay-Regular',
+}) ?? 'PlayfairDisplay-Regular';
+
+const serif = Platform.select<string>({
+  ios: 'Lora-Regular',
+  android: 'Lora-Regular',
+  default: 'Lora-Regular',
+}) ?? 'Lora-Regular';
+
+const serifElegant = Platform.select<string>({
+  ios: 'Lora-SemiBold',
+  android: 'Lora-SemiBold',
+  default: 'Lora-SemiBold',
+}) ?? 'Lora-SemiBold';
+
+const sans = Platform.select<string>({
+  ios: 'Inter-Regular',
+  android: 'Inter-Regular',
+  default: 'Inter-Regular',
+}) ?? 'Inter-Regular';
+
+const mono = Platform.select<string>({
+  ios: 'Menlo',
+  android: 'monospace',
+  default: 'monospace',
+}) ?? 'monospace';
+
 const scriptoriaTheme = {
   // Color System (from spec)
   colors: {
     // Primary accent (Burnished Gold)
     primary: '#C6A664',
+    accent: '#C6A664',
     primaryLight: '#D6BC7E',
     primaryDark: '#9E8A48',
 
@@ -57,19 +88,15 @@ const scriptoriaTheme = {
     fonts: {
       // If custom fonts are installed (assets/fonts + react-native-asset), these will be used.
       // Otherwise we gracefully fall back to platform defaults.
-      serifDisplay: Platform.select({ 
-        ios: 'PlayfairDisplay-Regular', 
-        android: 'PlayfairDisplay-Regular', 
-        default: 'PlayfairDisplay-Regular' 
-      }),
-      serif: Platform.select({ ios: 'Lora-Regular', android: 'Lora-Regular', default: 'Lora-Regular' }),
-      serifElegant: Platform.select({ ios: 'Lora-SemiBold', android: 'Lora-SemiBold', default: 'Lora-SemiBold' }),
+      serifDisplay,
+      serif,
+      serifElegant,
 
       // Sans-serif for functional text
-      sans: Platform.select({ ios: 'Inter-Regular', android: 'Inter-Regular', default: 'Inter-Regular' }),
+      sans,
 
       // Monospace
-      mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+      mono,
     },
 
     sizes: {
@@ -85,13 +112,13 @@ const scriptoriaTheme = {
     },
 
     weights: {
-      light: 300,     // Elegant light text
-      normal: 400,    // Standard body text
-      medium: 500,    // Emphasis within body
-      semibold: 600,  // Strong emphasis, subheadings
-      bold: 700,      // Bold headings
-      heavy: 800,     // Strong impact text
-    },
+      light: '300',     // Elegant light text
+      normal: '400',    // Standard body text
+      medium: '500',    // Emphasis within body
+      semibold: '600',  // Strong emphasis, subheadings
+      bold: '700',      // Bold headings
+      heavy: '800',     // Strong impact text
+    } as const,
 
     lineHeights: {
       tight: 1.25,
@@ -242,5 +269,7 @@ const scriptoriaTheme = {
     slow: 500,
   },
 };
+
+export type ScriptoriaTheme = typeof scriptoriaTheme;
 
 export default scriptoriaTheme;
