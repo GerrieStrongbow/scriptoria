@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  BackHandler,
   Dimensions,
   StyleSheet,
   Text,
@@ -251,6 +252,21 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   ...props
 }) => {
   const insets: EdgeInsets = useSafeAreaInsets();
+
+  React.useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [onClose, visible]);
 
   const menuPosition: DropdownAnchorPosition = React.useMemo(() => {
     const defaultPosition: DropdownAnchorPosition = { top: 60 + insets.top, right: 16 };
